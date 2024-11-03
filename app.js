@@ -33,11 +33,15 @@ app.use(cookieParser());
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header(
+        "Access-Control-Allow-Credentials",
         "Access-Control-Allow-Methods",
         "GET, POST, OPTIONS, PUT, PATCH, DELETE"
     );
     res.setHeader(
-        "Access-Control-Allow-Headers", "x-access-token, Origin, X-Requested-With, Content-Type, Accept"
+        "Access-Control-Allow-Headers",
+        "x-access-token, Origin, " +
+        "X-Requested-With, " +
+        "Content-Type, Accept"
     );
     res.setHeader("Access-Control-Allow-Credentials", true);
     res.setHeader("Access-Control-Max-Age", "1800");
@@ -46,10 +50,9 @@ app.use(function (req, res, next) {
 });
 
 const corsOptions = {
-    origin: ["http://localhost:3000", "https://glitch.com/edit/#!/tungsten-shell-weaver", "*"],
+    origin: ["http://localhost:3000"],
     credentials: true, //access-control-allow-credentials:true
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
-    withCredentials: true,
     optionSuccessStatus: 200,
 };
 
