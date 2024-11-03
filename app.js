@@ -46,7 +46,7 @@ app.use(function (req, res, next) {
 });
 
 const corsOptions = {
-    origin: ["http://localhost:3000", "*"],
+    origin: ["http://localhost:3000", "https://glitch.com/edit/#!/tungsten-shell-weaver", "*"],
     credentials: true, //access-control-allow-credentials:true
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
     withCredentials: true,
