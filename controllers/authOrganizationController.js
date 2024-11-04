@@ -197,11 +197,12 @@ exports.organizationLogin = async (req, res) => {
                     organization.tokens.push(token);
                     await organization.save();
                 }
-
             }
 
+            const {name, logo, banner, description, country, language, _id, uniqueId} = organization;
+
             res.json({
-                organization: organization,
+                organization: {name, logo, banner, description, country, language, _id, uniqueId},
                 token: token
             });
         } else {

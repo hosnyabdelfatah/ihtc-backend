@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, `public`)));
 
 
 const corsOptions = {
-    origin: ["http://localhost:3000", "https://ihtc.vercel.app", "https://ihtc-6iav6bn3d-hosnyabdelfatahs-projects.vercel.app/", "https://glitch.com/embed/#!/embed/tungsten-shell-weaver"], // List specific origins only
+    origin: ["http://localhost:3000", "https://ihtc.vercel.app", "https://ihtc-q2teign6e-hosnyabdelfatahs-projects.vercel.app/"], // List specific origins only
     credentials: true, // Allows cookies and credentials
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag'], // Headers you want exposed to the client
     optionsSuccessStatus: 200 // For legacy browsers (optional)
@@ -37,7 +37,9 @@ app.use(express.urlencoded({extended: true})); //Review it
 app.use(express.json({limit: "10kb"}));
 app.use(cookieParser());
 
-
+app.get('/', (req, res) => {
+    res.send('Hello in IHTC World!');
+});
 app.use('/specialties', doctorSpecialtyRoutes);
 app.use('/organizations', organizationRoutes);
 app.use('/roles', roleRoutes);

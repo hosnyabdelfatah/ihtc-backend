@@ -1,18 +1,14 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "api/index.js",
   "description": "IHTC",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "parcel public/src/index.html",
+    "start": "nodemon api/index.js",
     "server": "nodemon api/index.js",
-    "client": "npm run start --prefix ../client",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "start:prod": "cross-env NODE_ENV=production  nodemon api/index.js",
+    "start:prod": "cross-env NODE_ENV=production  nodemon server.js",
     "debug": "ndb api/index.js",
-    "watch:js": "parcel watch ./public/js/index.js --out-dir ./public/js --out-file bundle.js",
-    "build:js": "parcel build ./public/js/index.js --out-dir ./public/js --out-file bundle.js"
+    "build": "echo 'Express app - no build step required'"
   },
   "repository": "",
   "author": "IHTC",
@@ -47,8 +43,5 @@
     "uuid": "^10.0.0",
     "validator": "^13.12.0",
     "xss-clean": "^0.1.4"
-  },
-  "devDependencies": {
-    "parcel-bundler": "^1.12.5"
   }
 }
