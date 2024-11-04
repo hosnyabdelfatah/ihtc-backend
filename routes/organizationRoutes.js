@@ -18,6 +18,7 @@ router.route('/organization-signup').post(
 
 router.route('/login').post(authOrganizationController.organizationLogin);
 router.route("/refresh").get(organizationRefreshTokenController.handleOrganizationRefreshToken)
+
 router.use(authOrganizationController.isLoggedIn);
 
 // router.route('/campaigns').get(organizationController.allOrganizationMessages);

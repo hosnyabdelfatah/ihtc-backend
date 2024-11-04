@@ -10,6 +10,7 @@ const languageRoutes = require('./routes/languageRoutes');
 const countryRoutes = require('./routes/countryRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
 const campaignRoutes = require('./routes/campaignRoutes');
+const cors = require('cors');
 
 const app = express();
 
@@ -19,8 +20,6 @@ app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, `public`)));
 
-
-const cors = require('cors');
 
 const allowedOrigins = [
     "http://localhost:3000",
