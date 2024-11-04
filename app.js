@@ -21,14 +21,27 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, `public`)));
 
 
+const allowedOrigins = [
+    "http://localhost:3000",
+    "https://ihtc.vercel.app",
+    "https://ihtc-q2teign6e-hosnyabdelfatahs-projects.vercel.app/"
+];
+
 const corsOptions = {
-    origin: ["http://localhost:3000", "https://ihtc.vercel.app", "https://ihtc-q2teign6e-hosnyabdelfatahs-projects.vercel.app"], // List specific origins only
-    credentials: true, // Allows cookies and credentials
-    exposedHeaders: ['Set-Cookie', 'Date', 'ETag'], // Headers you want exposed to the client
-    optionsSuccessStatus: 200 // For legacy browsers (optional)
+    origin: (origin, callback) => {
+        if (allowedOrigins.includes(origin) || !origin) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
+    optionsSuccessStatus: 200
 };
 
-app.use(cors(corsOptions)); // Apply CORS with specified options
+app.use(cors(corsOptions));
+
 
 //Middleware
 app.use(bodyParser.urlencoded({extended: false})) //Review it
