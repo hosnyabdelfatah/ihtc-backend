@@ -45,14 +45,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-
-//Middleware
-app.use(bodyParser.urlencoded({extended: false})) //Review it
-app.use(bodyParser.json());
-app.use(express.urlencoded({extended: true})); //Review it
-app.use(express.json({limit: "10kb"}));
-app.use(cookieParser());
-
 app.use((req, res, next) => {
     res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade'); // Adjust as needed
     next();
@@ -75,6 +67,14 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     next();
 });
+
+
+//Middleware
+app.use(bodyParser.urlencoded({extended: false})) //Review it
+app.use(bodyParser.json());
+app.use(express.urlencoded({extended: true})); //Review it
+app.use(express.json({limit: "10kb"}));
+app.use(cookieParser());
 
 
 app.get('/', (req, res) => {
