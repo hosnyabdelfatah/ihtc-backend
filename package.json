@@ -1,18 +1,18 @@
 {
   "name": "server",
   "version": "1.0.0",
+  "main": "api/index.js",
   "description": "IHTC",
-  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --watch server.js",
-    "server": "nodemon server.js",
+    "start": "parcel public/src/index.html",
+    "server": "nodemon api/index.js",
     "client": "npm run start --prefix ../client",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "start:prod": "cross-env NODE_ENV=production  nodemon server.js",
-    "debug": "ndb server.js",
+    "start:prod": "cross-env NODE_ENV=production  nodemon api/index.js",
+    "debug": "ndb api/index.js",
     "watch:js": "parcel watch ./public/js/index.js --out-dir ./public/js --out-file bundle.js",
-    "build": "parcel build ./public/src/index.html"
+    "build": "parcel build public/src/index.html"
   },
   "repository": "",
   "author": "IHTC",

@@ -9,12 +9,8 @@ router.route('/')
     .post(doctorSpecialtyController.addDoctorSpecialty);
 
 router.route('/:specialtyId')
-.patch(doctorSpecialtyController.updateDoctorSpecialty)
-.delete(doctorSpecialtyController.deleteDoctorSpecialty);
-
-
-
-
+    .patch(doctorSpecialtyController.updateDoctorSpecialty)
+    .delete(doctorSpecialtyController.deleteDoctorSpecialty);
 
 
 module.exports = router;
