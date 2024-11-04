@@ -108,6 +108,10 @@ app.use((req, res, next) => {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     next();
 });
+app.use(function (req, res, next) {
+    req.headers.origin = req.headers.origin || req.headers.host;
+    next();
+});
 
 app.get('/', (req, res) => {
     res.send('Hello in IHTC World!');
