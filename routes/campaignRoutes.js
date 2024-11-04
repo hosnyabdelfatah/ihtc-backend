@@ -1,6 +1,6 @@
 const express = require('express');
 const campaignController = require('../controllers/campaignController');
-const authDoctor = require('../controllers/authDoctorController');
+// const authDoctor = require('../controllers/authDoctorController');
 
 const router = express.Router({mergeParams: true});
 

@@ -14,7 +14,9 @@ const organizationUniqueId = `E-${uuid.v4()}`;
 const createToken = (id) => {
     return jwt.sign(
         {id: id}, process.env.JWT_SECRET_KEY,
-        {expiresIn: '90d'}
+        {expiresIn: '90d'}, function (err, token) {
+            console.log(token);
+        }
     )
 }
 //////////////////////////////////////////////
@@ -136,7 +138,7 @@ exports.organizationSignup = async (req, res) => {
 
         cookieToken("organizationJwt", token, req, res);
 
-        
+
         res.status(201).json({
             status: "Success",
             token,

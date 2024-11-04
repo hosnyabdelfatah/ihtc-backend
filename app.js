@@ -4,7 +4,6 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-const userTypeRoutes = require('./routes/userTypeRoutes');
 const doctorSpecialtyRoutes = require('./routes/doctorSpecialtyRoutes');
 const organizationRoutes = require('./routes/organizationRoutes');
 const roleRoutes = require('./routes/roleRoutes');
@@ -23,7 +22,7 @@ app.use(express.static(path.join(__dirname, `public`)));
 
 
 const corsOptions = {
-    origin: ["http://localhost:3000", "https://ihtc.vercel.app", "https://ihtc-6iav6bn3d-hosnyabdelfatahs-projects.vercel.app/"], // List specific origins only
+    origin: ["http://localhost:3000", "https://ihtc.vercel.app", "https://ihtc-6iav6bn3d-hosnyabdelfatahs-projects.vercel.app/", "https://glitch.com/embed/#!/embed/tungsten-shell-weaver"], // List specific origins only
     credentials: true, // Allows cookies and credentials
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag'], // Headers you want exposed to the client
     optionsSuccessStatus: 200 // For legacy browsers (optional)
@@ -39,7 +38,6 @@ app.use(express.json({limit: "10kb"}));
 app.use(cookieParser());
 
 
-app.use('/user-type', userTypeRoutes);
 app.use('/specialties', doctorSpecialtyRoutes);
 app.use('/organizations', organizationRoutes);
 app.use('/roles', roleRoutes);

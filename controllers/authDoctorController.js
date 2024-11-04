@@ -11,7 +11,10 @@ const uuid = require('uuid');
 const createToken = (id) => {
     return jwt.sign(
         {id: id}, process.env.JWT_SECRETE_KEY,
-        {expiresIn: '90d'}
+        {expiresIn: '90d'}, function (err, token) {
+            if (err) console.log(err)
+            console.log(token);
+        }
     )
 }
 //////////////////////////////////////////////
