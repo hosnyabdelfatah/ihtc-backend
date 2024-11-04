@@ -23,7 +23,7 @@ app.use(express.static(path.join(__dirname, `public`)));
 
 const allowedOrigins = [
     "http://localhost:3000",
-    "https://ihtc.vercel.app",
+    "https://ihtc-backend.vercel.app/",
     "https://ihtc-q2teign6e-hosnyabdelfatahs-projects.vercel.app"
 ];
 
