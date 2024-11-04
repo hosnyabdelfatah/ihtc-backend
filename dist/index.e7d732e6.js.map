@@ -1,1 +1,0 @@
-{"mappings":"ACAA,QAAQ,GAAG,CAAC","sources":["<anon>","public/src/index.js"],"sourcesContent":["console.log(\"Parcel build test!\");\n\n//# sourceMappingURL=index.e7d732e6.js.map\n","console.log('Parcel build test!');"],"names":["console","log"],"version":3,"file":"index.e7d732e6.js.map"}
