@@ -36,6 +36,8 @@ const corsOptions = {
     //     }
     // },
     origin: '*',
+    methods: '*',
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,// Important for cookies/credentials
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
     optionsSuccessStatus: 200
@@ -68,6 +70,12 @@ app.use((req, res, next) => {
     console.log('Request Origin:', req.get('Origin'));
     next();
 });
+
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    next();
+});
+
 
 app.get('/', (req, res) => {
     res.send('Hello in IHTC World!');
