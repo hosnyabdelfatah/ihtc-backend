@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, `public`)));
 
 
 const corsOptions = {
-    origin: ["http://localhost:3000", "https://ihtc.vercel.app", "https://ihtc-q2teign6e-hosnyabdelfatahs-projects.vercel.app/"], // List specific origins only
+    origin: ["http://localhost:3000", "https://ihtc.vercel.app", "https://ihtc-q2teign6e-hosnyabdelfatahs-projects.vercel.app"], // List specific origins only
     credentials: true, // Allows cookies and credentials
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag'], // Headers you want exposed to the client
     optionsSuccessStatus: 200 // For legacy browsers (optional)
