@@ -102,7 +102,7 @@ app.use((req, res, next) => {
     console.log('Request Origin:', req.get('Origin'));
     next();
 });
-
+ 
 app.get('/', (req, res) => {
     res.send('Hello in IHTC World!');
 });
