@@ -74,6 +74,16 @@ app.use(express.urlencoded({extended: true})); //Review it
 app.use(express.json({limit: "10kb"}));
 app.use(cookieParser());
 
+const corsOptions = {
+    origin: ["https://ihtc.vercel.app/", "http://localhost:3000"],
+    credentials: true, //access-control-allow-credentials:true
+    withCredentials: true,
+    optionSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors());
+
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header(
@@ -89,20 +99,16 @@ app.use(function (req, res, next) {
     next();
 });
 
-const corsOptions = {
-    origin: ["https://ihtc.vercel.app/", "http://localhost:3000"],
-    credentials: true, //access-control-allow-credentials:true
-    withCredentials: true,
-    optionSuccessStatus: 200,
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors());
 app.use((req, res, next) => {
     console.log('Request Origin:', req.get('Origin'));
     next();
 });
- 
+
+app.use((req, res, next) => {
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+});
+
 app.get('/', (req, res) => {
     res.send('Hello in IHTC World!');
 });
