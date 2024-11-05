@@ -17,7 +17,7 @@ const app = express();
 
 
 const corsOptions = {
-    origin: ["https://ihtc.vercel.app", "https://ihtc-2q6h2anet-hosnyabdelfatahs-projects.vercel.app/", "http://localhost:3000"],
+    origin: ["https://ihtc.vercel.app/", "https://ihtc-a875ks9gv-hosnyabdelfatahs-projects.vercel.app/", "https://ihtc-2q6h2anet-hosnyabdelfatahs-projects.vercel.app/", "http://localhost:3000"],
     credentials: true,
     optionsSuccessStatus: 200,
 };
