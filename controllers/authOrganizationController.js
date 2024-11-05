@@ -199,10 +199,10 @@ exports.organizationLogin = async (req, res) => {
                 }
             }
 
-            const {name, logo, banner, description, country, language, _id, uniqueId} = organization;
+            const {name, logo, banner, description, industryField, country, language, _id, uniqueId} = organization;
 
             res.json({
-                organization: {name, logo, banner, description, country, language, _id, uniqueId},
+                organization: {name, logo, banner, description, country, industryField, language, _id, uniqueId},
                 token: token
             });
         } else {
