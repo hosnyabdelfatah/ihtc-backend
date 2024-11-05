@@ -75,41 +75,19 @@ app.use(express.json({limit: "10kb"}));
 app.use(cookieParser());
 
 const corsOptions = {
-    origin: ["https://ihtc.vercel.app/", "http://localhost:3000"],
-    credentials: true, //access-control-allow-credentials:true
-    withCredentials: true,
-    optionSuccessStatus: 200,
+    origin: ["https://ihtc.vercel.app", "http://localhost:3000"],
+    credentials: true,
+    optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors());
 
-app.use(function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header(
-        "Access-Control-Allow-Methods",
-        "GET, POST, OPTIONS, PUT, PATCH, DELETE"
-    );
-    res.setHeader(
-        "Access-Control-Allow-Headers", "x-access-token, Origin, X-Requested-With, Content-Type, Accept"
-    );
+app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "x-access-token, Origin, X-Requested-With, Content-Type, Accept");
     res.setHeader("Access-Control-Allow-Credentials", true);
     res.setHeader("Access-Control-Max-Age", "1800");
-    res.setHeader("Access-Control-Allow-Methods", "PUT, POST, GET, DELETE, PATCH, OPTIONS");
-    next();
-});
-
-app.use((req, res, next) => {
-    console.log('Request Origin:', req.get('Origin'));
-    next();
-});
-
-app.use((req, res, next) => {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    next();
-});
-app.use(function (req, res, next) {
-    req.headers.origin = req.headers.origin || req.headers.host;
     next();
 });
 
