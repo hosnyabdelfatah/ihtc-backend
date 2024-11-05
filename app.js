@@ -75,7 +75,7 @@ app.use(express.json({limit: "10kb"}));
 app.use(cookieParser());
 
 const corsOptions = {
-    origin: ["https://ihtc.vercel.app", "http://localhost:3000"],
+    origin: ["https://ihtc.vercel.app", "https://ihtc-2q6h2anet-hosnyabdelfatahs-projects.vercel.app/", "http://localhost:3000"],
     credentials: true,
     optionsSuccessStatus: 200,
 };
