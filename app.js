@@ -21,7 +21,7 @@ const corsOptions = {
         "https://ihtc.vercel.app",
         "https://ihtc-hosnyabdelfatahs-projects.vercel.app",
         "https://ihtc-a875ks9gv-hosnyabdelfatahs-projects.vercel.app",
-        "https://ihtc-frontend.vercel.app/",
+        "https://ihtc-frontend.vercel.app",
         "https://ihtc-2q6h2anet-hosnyabdelfatahs-projects.vercel.app",
         "http://localhost:3000"
     ],
