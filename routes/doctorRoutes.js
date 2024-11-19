@@ -9,10 +9,10 @@ router.use('/:doctorId/messages', messageRoutes);
 
 router.route('/').get(doctorController.getAllDoctors);
 
-router.route('/signup')
+router.route('/doctor-signup')
     .post(authDoctorController.uploadDoctorImage,
         authDoctorController.resizeImage,
-        authDoctorController.signUp);
+        authDoctorController.doctorSignUp);
 router.route('/login').post(authDoctorController.doctorLogin);
 router.route('/forgotPassword').post(authDoctorController.forgetPassword);
 router.route('/resetPassword/:token').patch(authDoctorController.resetPassword);

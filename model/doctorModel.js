@@ -42,10 +42,6 @@ const doctorSchema = new Schema({
             required: true,
             default: false
         },
-        description: {
-            type: String,
-            trim: true,
-        },
         workPlace: {
             type: String,
             trim: true,
@@ -66,7 +62,7 @@ const doctorSchema = new Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Language',
             required: [true, 'Language is require'],
-            default: 'English'
+            default: '67041f35519c14c9e1bba292'
         },
         jobTitle: {
             type: String,
@@ -76,6 +72,10 @@ const doctorSchema = new Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Country',
             required: [true, 'Select your country']
+        },
+        description: {
+            type: String,
+            required: [true, 'Description is require!']
         },
         selected: {
             type: Boolean,

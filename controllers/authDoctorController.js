@@ -6,14 +6,15 @@ const crypto = require('crypto');
 const Email = require('../utils/email');
 const filterBody = require('../helpers/filterBody');
 const uuid = require('uuid');
+const fs = require("fs");
 
+const doctorUniqueId = `E-${uuid.v4()}`;
 
 const createToken = (id) => {
     return jwt.sign(
-        {id: id}, process.env.JWT_SECRETE_KEY,
+        {id: id}, process.env.JWT_SECRET_KEY,
         {expiresIn: '90d'}, function (err, token) {
-            if (err) console.log(err)
-            console.log(token);
+            // console.log(token);
         }
     )
 }
@@ -28,9 +29,32 @@ const cookieToken = (name, token, req, res) => {
 }
 
 ///////////////////////// Multer
-const multerStorage = multer.memoryStorage();
+const multerStorage = multer.diskStorage({
+
+    destination: (req, file, cb) => {
+        console.log("32" + req.file)
+        console.log("33" + file)
+        let doctorImageDir = '';
+
+        if (!fs.existsSync(`./public/images/doctor/${doctorUniqueId}`)) {
+            fs.mkdirSync(`./public/images/doctor/${doctorUniqueId}`);
+            doctorImageDir = `./public/images/doctor/${doctorUniqueId}`
+        } else {
+            doctorImageDir = `./public/images/doctor/${doctorUniqueId}`
+        }
+        cb(null, doctorImageDir)
+    },
+    filename: (req, file, cb) => {
+        const fileName = file.originalname.slice(0, file.originalname.lastIndexOf('.'))
+        const ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
+        console.log(fileName + "_" + Date.now() + "." + ext)
+        cb(null, fileName + "_" + Date.now() + "." + ext);
+    }
+});
 
 const multerFilter = (req, file, cb) => {
+
+    console.log("53" + file)
     if (file.mimetype.startsWith('image')) {
         cb(null, true);
     } else {
@@ -43,10 +67,10 @@ const upload = multer({
     fileFilter: multerFilter
 });
 
-exports.uploadDoctorImage = upload.single('avatar');
+exports.uploadDoctorImage = upload.single('image');
 /////////////////////////
 
-///////// Resize Avater /////////
+///////// Resize Avatar /////////
 exports.resizeImage = async (req, res, next) => {
     // console.log(`Fileis: ${req.file}`);
     if (!req.file) return next();
@@ -59,14 +83,13 @@ exports.resizeImage = async (req, res, next) => {
         .resize(300, 300)
         .toFormat('webp')
         .webp({quality: 90})
-        .toFile(`./public/images/doctor/${namedFile.toLowerCase()}.webp`);
+        .toFile(`./public/images/doctor/${undefined.toLowerCase()}.webp`);
 
     next();
 }
 ////////////////////////////////////////
 
-exports.signUp = async (req, res) => {
-
+exports.doctorSignUp = async (req, res) => {
     try {
         const errMessages = [];
         let eMessages = ``;
@@ -96,17 +119,22 @@ exports.signUp = async (req, res) => {
             return res.status(400).send(eMessages);
         }
         if (req.file) {
-            image = `${req.protocol}://${req.get('host')}/images/doctor/${email.toLowerCase()}.webp`;
+            // ./public/images/doctor/${doctorUniqueId}`
+            image = `${req.protocol}://${req.get('host')}/images/doctor/${doctorUniqueId}/${email.toLowerCase()}.webp`;
         } else {
             image = `${req.protocol}://${req.get('host')}/images/doctor/avatar.jpeg`;
         }
-
+        console.log(image)
         const doctorRequest = filterBody(req.body, ...doctorInfo);
         // console.log(doctorRequest)
+        const isExistsDoctor = await Doctor.findOne({email})
+
+        if (isExistsDoctor) return res.status(400).send(`Doctor with Email ${email} is already exists! `)
+
         const newDoctor = await Doctor.create({...doctorRequest, image, uniqueId: `D-${uuid.v4()}`});
 
         const token = createToken(newDoctor._id);
-
+        console.log(`TOKEN IS: ${token}`)
         newDoctor.tokens.push(token);
         newDoctor.save();
 
@@ -115,8 +143,6 @@ exports.signUp = async (req, res) => {
 
         cookieToken("doctorJwt", token, req, res);
 
-        //TODO SEND EMAIL TO THE Doctor
-        // console.log(`URL: ${url}`);
         await new Email(newDoctor, url).sendWelcome();
 
         res.status(201).json({
@@ -124,8 +150,14 @@ exports.signUp = async (req, res) => {
             data: newDoctor.fname,
         });
     } catch (err) {
-        // console.log(err.message)
-        res.status(500).send(err.message);
+        console.log(JSON.stringify(err.message))
+        if (err.code === 11000) {
+            res.status(400).json({
+                code: err.code,
+                message: `Duplicate field :  ${JSON.stringify(Object.keys(err.keyValue)[0])} value. Please use another value!`
+            })
+        } else
+            res.status(500).send(err.message);
     }
 }
 //////////////////////////////////////////////
@@ -148,14 +180,29 @@ exports.activateDoctor = async (req, res) => {
 
 //////////////////////////////////////////////
 exports.doctorLogin = async (req, res) => {
-    console.log(`REQUEST BODY IS: ${req.user}`)
+
     const {user, password} = req.body;
     if (!user || !password) return res.status(400).send('Please enter your user  and password');
     // console.log(req.cookies['jwt']);
-    // if (user.startsWith('D-'))
-    console.log(`USER PASSWORD IS:  ${user.password}`)
+
+    console.log(`USER PASSWORD IS:  ${req.body.password}`)
+
     try {
-        const doctor = await Doctor.findOne({user}).exec();
+        let doctor
+        if (user.startsWith('D-'))
+            doctor = await Doctor.findOne({uniqueId: user}).exec();
+        else if (user.indexOf('@') !== -1)
+            doctor = await Doctor.findOne({email: user}).populate([
+                {path: "language", model: "Language", select: "title"},
+                {path: "country", model: "Country", select: "title"},
+                {
+                    path: "specialty",
+                    model: "DoctorSpecialty",
+                    select: "title"
+                }
+            ]);
+
+
         if (!doctor) return res.status(404).send('There is no doctor with this email!');
 
         const rightPassword = await doctor.correctPassword(password, doctor.password)
@@ -170,8 +217,20 @@ exports.doctorLogin = async (req, res) => {
                 doctor.save();
             }
 
+            const doctorData = {
+                firstName: doctor.fname,
+                lastName: doctor.lname,
+                profileImage: doctor.image,
+                country: doctor.country.title,
+                specialty: doctor.specialty.title,
+                language: doctor.language.title,
+                description: doctor.description
+            }
+
             res.json({
-                doctor: doctor.fname
+                status: "success",
+                doctor: doctorData
+
             });
         } else {
             return res.status(401).send('Wrong email or password')

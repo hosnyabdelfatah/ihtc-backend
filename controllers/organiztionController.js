@@ -6,10 +6,12 @@ const filterBody = require('../helpers/filterBody')
 
 
 exports.getAllOrganizations = async (req, res) => {
+
+
     try {
         let filter = {};
         if (req.params.organizationId) filter = {from: req.params.organizationId};
-        const allOrganizations = await Organization.find({})
+        const allOrganizations = await Organization.find(filter)
             .populate({
                 path: 'country',
                 model: "Country",

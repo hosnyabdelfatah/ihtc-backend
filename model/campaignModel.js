@@ -17,8 +17,8 @@ const campaignSchema = new Schema({
             type: String,
             required: [true, 'Campaign text is require'],
         },
-        receiver: {
-            type: mongoose.Schema.Types.ObjectId,
+        receivers: {
+            type: [mongoose.Schema.Types.ObjectId],
             ref: 'Doctor',
             required: [true, 'You have to enter the receiver for this message']
         },

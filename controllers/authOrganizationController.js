@@ -15,7 +15,7 @@ const createToken = (id) => {
     return jwt.sign(
         {id: id}, process.env.JWT_SECRET_KEY,
         {expiresIn: '90d'}, function (err, token) {
-            console.log(token);
+            // console.log(token);
         }
     )
 }
@@ -30,8 +30,6 @@ const cookieToken = (name, token, req, res) => {
 }
 //////////////////////////////////////////////
 
-
-//////??????????????????????????????????????????
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
         let organizationImageDir = '';
@@ -44,11 +42,28 @@ var storage = multer.diskStorage({
         cb(null, organizationImageDir)
     },
     filename: (req, file, cb) => {
-        const fileName = `${req.body.email}-logo`
-        const ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
-        console.log(fileName + '.' + ext)
-        cb(null, fileName + '.' + ext);
+        let logoName;
+        let bannerName;
+        let ext;
+
+        if (file.fieldname === 'logo') {
+            logoName = `${req.body.email}-logo`
+            ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
+            console.log(logoName = `${req.body.email}-logo`
+                + '.' + ext)
+
+            cb(null, logoName + '.' + ext);
+        } else if (file.fieldname === 'banner') {
+            bannerName = `${req.body.email}-banner`
+            // console.log()
+            ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
+            console.log(bannerName + '.' + ext)
+            cb(null, bannerName + '.' + ext);
+        } else {
+            cb(new Error('Invalid field name'));
+        }
     }
+
 })
 
 const multerFilter = (req, file, cb) => {
@@ -90,8 +105,11 @@ exports.resizeImage = async (req, res, next) => {
 ////////////////////////////////////////
 
 exports.organizationSignup = async (req, res) => {
+    console.log(`REQ.FILE IS: ${JSON.stringify(req.body)}`)
+    console.log(`REQ.FILE IS: ${req.file}`)
     try {
         let logo = ``;
+        let banner = ``;
         const errMessages = [];
         let eMessages = ``;
         const organizationInfo = ["name", "email", "password", "passwordConfirm", "phone", "mobile", "logo", "banner", "description", "industryField", "country"];
@@ -120,11 +138,11 @@ exports.organizationSignup = async (req, res) => {
 
         logo = `${req.protocol}://${req.get('host')}/images/organizations/${organizationUniqueId}/${email.toLowerCase()}-logo.webp`;
 
-        const banner = `./images/organizations/${organizationUniqueId}/${email.toLowerCase()}-banner.webp`;
+        banner = `${req.protocol}://${req.get('host')}/images/organizations/${organizationUniqueId}/${email.toLowerCase()}-banner.webp`;
 
         const newOrganization = await Organization.create({
             ...organizationRequest,
-            logo,
+            logo, banner,
             uniqueId: organizationUniqueId
         });
 
@@ -145,7 +163,14 @@ exports.organizationSignup = async (req, res) => {
             organization: newOrganization.name,
         });
     } catch (err) {
-        console.log(err.message)
+        console.log(JSON.stringify(err.message))
+        if (err.code === 11000) {
+            res.status(400).json({
+                code: err.code,
+                message: `Duplicate field :  ${JSON.stringify(Object.keys(err.keyValue)[0])} value. Please use another value!`
+            })
+        } else
+            res.send(err.message)
     }
 }
 //////////////////////////////////////////////
@@ -163,12 +188,12 @@ exports.activateOrganization = async (req, res) => {
         res.status(201).send(`the organization ${activatedOrganization.name} now is active organization thank you`);
     } catch (err) {
         console.log(err.message);
+        res.send(err.message)
     }
 }
 
 //////////////////////////////////////////////
 exports.organizationLogin = async (req, res) => {
-    console.log(req.body)
     const {user, password} = req.body;
     if (!user || !password) return res.status(400).send('Please enter your email and password');
     // console.log(req.cookies['organizationJwt']);
@@ -186,7 +211,7 @@ exports.organizationLogin = async (req, res) => {
             if (!req.cookies['organizationJwt']) {
                 token = createToken(organization._id)
                 cookieToken("organizationJwt", token, req, res);
-                console.log(token)
+                // console.log(token)
                 organization.tokens.push(token);
                 await organization.save();
             } else {
@@ -200,7 +225,7 @@ exports.organizationLogin = async (req, res) => {
             }
 
             const {name, logo, banner, description, industryField, country, language, _id, uniqueId} = organization;
-
+            // console.log(banner)
             res.json({
                 organization: {name, logo, banner, description, country, industryField, language, _id, uniqueId},
                 token: token
@@ -209,13 +234,14 @@ exports.organizationLogin = async (req, res) => {
             return res.status(401).send('Wrong email or password')
         }
     } catch (err) {
-        res.send(err.message);
+        console.log(err)
+        return res.send(err.message);
     }
 }
 //////////////////////////////////////////////
 exports.logout = async (req, res, next) => {
     try {
-        console.log(req.cookies.organizationJwt)
+        // console.log(req.cookies.organizationJwt)
         const currentToken = await req.cookies.organizationJwt;
 
         if (!currentToken) {
@@ -242,7 +268,7 @@ exports.logout = async (req, res, next) => {
         res.send("We will wait you again!");
         next();
     } catch (err) {
-        res.send(err.message);
+        return res.send(err.message);
     }
 }
 
@@ -275,7 +301,7 @@ exports.isLoggedIn = async (req, res, next) => {
         res.locals.organization = currentOrganization;
         next();
     } catch (err) {
-        res.send(err.message);
+        return res.send(err.message);
     }
 };
 //////////////////////////////////////////////
@@ -295,7 +321,7 @@ exports.forgetPassword = async (req, res) => {
         organization.passwordResetToken = undefined;
         organization.passwordResetExpires = undefined;
         await organization.save({validateBeforeSave: false})
-        res.send(err.message);
+        return res.send(err.message);
     }
 }
 //////////////////////////////////////////////
@@ -347,7 +373,8 @@ exports.updatePassword = async (req, res) => {
             });
         }
     } catch (err) {
-        return console.log(err.message)
+        console.log(err.message)
+        return res.send(err.message)
     }
 }
 

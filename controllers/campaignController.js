@@ -12,16 +12,16 @@ const campaignUniqueId = `C-${uuid.v4()}`;
 
 const multerStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // if (file.mimetype.startsWith('video')) {
-        //     cb(null, 'video')
-        // } else if (file.mimetype.startsWith('image')) {
-        //     cb(null, 'img')
-        // } else if (file.endsWith('.pdf')) {
-        //     cb(null, 'text')
-        // } else {
-        //     console.log(file.mimetype)
-        //     cb({error: 'Mime type not supported'})
-        // }
+        if (file.mimetype.startsWith('video')) {
+            cb(null, 'video')
+        } else if (file.mimetype.startsWith('image')) {
+            cb(null, 'img')
+        } else if (file.endsWith('.pdf')) {
+            cb(null, 'text')
+        } else {
+            console.log(file.mimetype)
+            cb({error: 'Mime type not supported'})
+        }
 
         let campaignDir = '';
         if (!fs.existsSync(`./public/attaches/campaigns/${campaignUniqueId}`)) {
@@ -33,10 +33,7 @@ const multerStorage = multer.diskStorage({
         cb(null, campaignDir)
     },
     filename: (req, file, cb) => {
-        // console.log(file);
-        // console.log('originalname' + file.originalname);
         const fileName = file.originalname;
-        // console.log(fileName)
         cb(null, file.originalname);
     }
 });
@@ -55,10 +52,8 @@ const upload = multer({
     fileFilter: multerFilter
 });
 
-
 exports.uploadCampaignMedia = upload.single('attach');
-
-///////// Resize Avatar /////////
+///////// Resize Image /////////
 // exports.resizeImage = async (req, res, next) => {
 //     // console.log(`File is: ${req.file}`);
 //     if (!req.file) return next();
@@ -123,13 +118,12 @@ exports.createCampaign = async (req, res) => {
     // console.log(receivers)
 
     try {
+        newCampaign = await Campaign.create(
+            {...campaignRequest, receivers, uniqueId: campaignUniqueId, attach});
+
         for (let receiver of receivers) {
-            console.log(`R--${receiver}`)
-            newCampaign = await Campaign.create(
-                {...campaignRequest, receiver, uniqueId: campaignUniqueId, attach});
-
-            createAudience = await AudienceTarget.create({campaignUniqueId, receiver})
-
+            // console.log(`R--${receiver}`);
+            createAudience = await AudienceTarget.create({campaignUniqueId, receiver});
         }
         res.status(201).json({
             status: 'success',
@@ -143,7 +137,21 @@ exports.createCampaign = async (req, res) => {
 
 exports.updateCampaignStatus = async (req, res) => {
     const campaignId = req.body.id;
-    const newCampaignStatus = req.body.status;
+    if (!campaignId) return res
+        .status(400)
+        .send('You must select cmpaign for update or enter its ID');
 
-    const updatedCampaign = await Campaign.findByIdAndUpdate(campaignId, {})
+    const newCampaignStatus = req.body.status;
+    if (!newCampaignStatus) return res
+        .status(400)
+        .send('There is no new status to update');
+
+    const updatedCampaign = await Campaign
+        .findByIdAndUpdate(campaignId, {status: newCampaignStatus}, {new: true});
+    if (!updatedCampaign) return res.status(400).send('There is no campaign with this ID')
+
+    res.status(200).json({
+        campaignTitle: updatedCampaign.subject,
+        newStatus: updatedCampaign.status
+    })
 }

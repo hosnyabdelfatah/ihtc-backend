@@ -2,8 +2,23 @@ const Doctor = require('../model/doctorModel');
 
 exports.getAllDoctors = async (req, res) => {
     try {
-        // const allDoctors = await Doctor.find().select('fname image language country uniqueId -_id');
-        const allDoctors = await Doctor.find()
+        let filter = {};
+        const page = parseInt(req.query.page) || 1;
+        const limit = req.query.limit || 20;
+
+        const {country, specialty} = req.query;
+
+        filter = country ? {...filter, country} : {};
+        filter = specialty ? {...filter, specialty} : {...filter};
+
+        console.log(filter)
+
+        const startIndex = (page - 1) * limit;
+
+        const totalDocs = await Doctor.countDocuments();
+        const totalPages = Math.ceil(totalDocs / limit);
+
+        const allDoctors = await Doctor.find(filter).skip(startIndex).limit(limit)
             .populate([
                 {path: "language", model: "Language", select: "title"},
                 {path: "country", model: "Country", select: "title"},
@@ -13,12 +28,20 @@ exports.getAllDoctors = async (req, res) => {
                     select: "title"
                 }
             ]);
+
+        const totalCurrentSearchDoctorsPages = Math.ceil(allDoctors.length / limit)
+        const pages = !country && !specialty ? totalPages : totalCurrentSearchDoctorsPages;
+        // console.log(`${allDoctors.length} / ${limit}`)
+
         res.status(200).json({
-            status: 'success',
-            data: allDoctors
+            count: allDoctors.length,
+            currentPage: page,
+            pages,
+            totalItems: totalDocs,
+            data: allDoctors,
         });
     } catch (err) {
-        console.log(err);
+        console.log('Error fetching doctor:', err);
         res.status(500).send(err.message);
     }
 }
