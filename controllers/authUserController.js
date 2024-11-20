@@ -1,20 +1,21 @@
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const sharp = require('sharp');
-const Doctor = require('../model/doctorModel');
+const User = require('../model/userModel');
 const crypto = require('crypto');
 const Email = require('../utils/email');
 const filterBody = require('../helpers/filterBody');
 const uuid = require('uuid');
 const fs = require("fs");
 
-const doctorUniqueId = `E-${uuid.v4()}`;
+const userUniqueId = `E-${uuid.v4()}`;
 
 const createToken = (id) => {
     return jwt.sign(
         {id: id}, process.env.JWT_SECRET_KEY,
         {expiresIn: '90d'}, function (err, token) {
-            // console.log(token);
+            // console.log(`The TOKEN is :${token}`);
+            if (err) console.log(err)
         }
     )
 }
@@ -33,28 +34,32 @@ const multerStorage = multer.diskStorage({
 
     destination: (req, file, cb) => {
         console.log("32" + req.file)
-        console.log("33" + file)
-        let doctorImageDir = '';
+        console.log("33" + JSON.stringify(file))
+        let userImageDir = '';
 
-        if (!fs.existsSync(`./public/images/doctor/${doctorUniqueId}`)) {
-            fs.mkdirSync(`./public/images/doctor/${doctorUniqueId}`);
-            doctorImageDir = `./public/images/doctor/${doctorUniqueId}`
+        if (!fs.existsSync(`./public/images/users/${userUniqueId}`)) {
+            fs.mkdirSync(`./public/images/users/${userUniqueId}`);
+            userImageDir = `./public/images/users/${userUniqueId}`
         } else {
-            doctorImageDir = `./public/images/doctor/${doctorUniqueId}`
+            userImageDir = `./public/images/users/${userUniqueId}`
         }
-        cb(null, doctorImageDir)
+        cb(null, userImageDir)
     },
     filename: (req, file, cb) => {
+        if (!req.body.email) {
+            console.log(`Email: ${req.body.email}`)
+            // return false;
+        }
+        const avatarName = `${userUniqueId}-avatar`
         const fileName = file.originalname.slice(0, file.originalname.lastIndexOf('.'))
         const ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
-        console.log(fileName + "_" + Date.now() + "." + ext)
-        cb(null, doctorUniqueId + "." + ext);
+        // console.log(fileName + "_" + Date.now() + "." + ext)
+        console.log(avatarName + "." + ext)
+        cb(null, avatarName + "." + ext);
     }
 });
 
 const multerFilter = (req, file, cb) => {
-
-    console.log("53" + file)
     if (file.mimetype.startsWith('image')) {
         cb(null, true);
     } else {
@@ -67,7 +72,7 @@ const upload = multer({
     fileFilter: multerFilter
 });
 
-exports.uploadDoctorImage = upload.single('image');
+exports.uploadUserAvatar = upload.single('avatar');
 /////////////////////////
 
 ///////// Resize Avatar /////////
@@ -75,27 +80,24 @@ exports.resizeImage = async (req, res, next) => {
     // console.log(`Fileis: ${req.file}`);
     if (!req.file) return next();
 
-    const namedFile = req.body.email;
-    if (!namedFile) return res.status(404).send('Select category to update its image or write  category English name!');
-
-
-    await sharp(req.file.buffer)
+    await sharp(req.file)
         .resize(300, 300)
         .toFormat('webp')
         .webp({quality: 90})
-        .toFile(`./public/images/doctor/${doctorUniqueId.toLowerCase()}.webp`);
-
+        .toFile(`./public/images/users/${userUniqueId}/${userUniqueId}-avatar.webp`);
     next();
 }
 ////////////////////////////////////////
 
-exports.doctorSignUp = async (req, res) => {
+exports.userSignUp = async (req, res) => {
+    console.log(req.file)
+    console.log(req.body)
     try {
         const errMessages = [];
         let eMessages = ``;
         let image = ``;
 
-        const doctorInfo = ["fname", "lname", "email", "password", "passwordConfirm",
+        const userInfo = ["fname", "lname", "email", "password", "passwordConfirm",
             "whatsapp", "description", "workPlace", "facebookId", "specialty",
             "language", "jobTitle", "country"
         ];
@@ -119,38 +121,38 @@ exports.doctorSignUp = async (req, res) => {
             return res.status(400).send(eMessages);
         }
         if (req.file) {
-            // ./public/images/doctor/${doctorUniqueId}`
-            image = `${req.protocol}://${req.get('host')}/images/doctor/${doctorUniqueId}/${doctorUniqueId}.webp`;
+            // ./public/images/user/${userUniqueId}`
+            console.log(`FILE 125: ${JSON.stringify(req.file)}`)
+            avatar = `${req.protocol}://${req.get('host')}/images/user/${userUniqueId}/${userUniqueId}-avatar.webp`;
         } else {
-            image = `${req.protocol}://${req.get('host')}/images/doctor/avatar.jpeg`;
+            avatar = `${req.protocol}://${req.get('host')}/images/user/avatar.jpeg`;
         }
-        console.log(image)
-        const doctorRequest = filterBody(req.body, ...doctorInfo);
-        // console.log(doctorRequest)
-        const isExistsDoctor = await Doctor.findOne({email})
+        console.log(avatar)
+        const userRequest = filterBody(req.body, ...userInfo);
+        // console.log(userRequest)
+        const isExistsUser = await User.findOne({email})
 
-        if (isExistsDoctor) return res.status(400).send(`Doctor with Email ${email} is already exists! `)
+        if (isExistsUser) return res.status(400).send(`User with Email ${email} is already exists! `);
 
-        const newDoctor = await Doctor.create({
-            ...doctorRequest, image,
-            uniqueId: `D-${doctorUniqueId}`
-        });
+        const newUser = await User.create({...userRequest, avatar, uniqueId: userUniqueId});
 
-        const token = createToken(newDoctor._id);
-        console.log(`TOKEN IS: ${token}`)
-        newDoctor.tokens.push(token);
-        newDoctor.save();
+        console.log(newUser._id)
+        const token = createToken({id: newUser._id});
+
+        // console.log(`TOKEN IS: ${token}`)
+        // newUser.tokens.push(token);
+        // newUser.save();
 
         const url = `${req.protocol}://${req.get('host')}`;
 
 
-        cookieToken("doctorJwt", token, req, res);
+        cookieToken("userJwt", token, req, res);
 
-        await new Email(newDoctor, url).sendWelcome();
+        await new Email(newUser, url).sendWelcome();
 
         res.status(201).json({
             status: "Success",
-            data: newDoctor.fname,
+            data: newUser.fname,
         });
     } catch (err) {
         console.log(JSON.stringify(err.message))
@@ -165,24 +167,24 @@ exports.doctorSignUp = async (req, res) => {
 }
 //////////////////////////////////////////////
 
-exports.activateDoctor = async (req, res) => {
+exports.activateUser = async (req, res) => {
     try {
-        const id = req.params.doctorId;
-        if (!id) return res.status(400).send('Please enter doctor id!');
+        const id = req.params.userId;
+        if (!id) return res.status(400).send('Please enter user id!');
 
-        const activatedUser = await Doctor.findByIdAndUpdate(id, {active: true});
-        if (!activatedUser) return res.status(404).send('there is no doctor with this ID!');
+        const activatedUser = await User.findByIdAndUpdate(id, {active: true});
+        if (!activatedUser) return res.status(404).send('there is no user with this ID!');
 
-        //:TODO Send Email to the doctor to tell it its account was  activated .
+        //:TODO Send Email to the user to tell it its account was  activated .
 
-        res.status(201).send(`the doctor ${activatedUser.name} now is active doctor thank you`);
+        res.status(201).send(`the user ${activatedUser.name} now is active user thank you`);
     } catch (err) {
         // console.log(err.message);
     }
 }
 
 //////////////////////////////////////////////
-exports.doctorLogin = async (req, res) => {
+exports.userLogin = async (req, res) => {
 
     const {user, password} = req.body;
     if (!user || !password) return res.status(400).send('Please enter your user  and password');
@@ -191,48 +193,49 @@ exports.doctorLogin = async (req, res) => {
     console.log(`USER PASSWORD IS:  ${req.body.password}`)
 
     try {
-        let doctor
+        let user
         if (user.startsWith('D-'))
-            doctor = await Doctor.findOne({uniqueId: user}).exec();
+            user = await User.findOne({uniqueId: user}).exec();
         else if (user.indexOf('@') !== -1)
-            doctor = await Doctor.findOne({email: user}).populate([
+            user = await User.findOne({email: user}).populate([
                 {path: "language", model: "Language", select: "title"},
                 {path: "country", model: "Country", select: "title"},
                 {
                     path: "specialty",
-                    model: "DoctorSpecialty",
+                    model: "UserSpecialty",
                     select: "title"
                 }
             ]);
 
 
-        if (!doctor) return res.status(404).send('There is no doctor with this email!');
+        if (!user) return res.status(404).send('There is no user with this email!');
 
-        const rightPassword = await doctor.correctPassword(password, doctor.password)
+        const rightPassword = await user.correctPassword(password, user.password)
         if (!rightPassword) return res.status(400).send('Email or password not correct');
 
 
-        if (doctor && rightPassword) {
+        if (user && rightPassword) {
             if (!req.cookies['jwt']) {
-                const token = createToken(doctor._id)
-                cookieToken("doctorJwt", token, req, res);
-                doctor.tokens.push(token);
-                doctor.save();
+                const token = createToken(user._id)
+                console.log(`New user token is: ${token}`)
+                cookieToken("userJwt", token, req, res);
+                user.tokens.push(token);
+                user.save();
             }
 
-            const doctorData = {
-                firstName: doctor.fname,
-                lastName: doctor.lname,
-                profileImage: doctor.image,
-                country: doctor.country.title,
-                specialty: doctor.specialty.title,
-                language: doctor.language.title,
-                description: doctor.description
+            const userData = {
+                firstName: user.fname,
+                lastName: user.lname,
+                profileImage: user.image,
+                country: user.country.title,
+                specialty: user.specialty.title,
+                language: user.language.title,
+                description: user.description
             }
 
             res.json({
                 status: "success",
-                doctor: doctorData
+                user: userData
 
             });
         } else {
@@ -243,7 +246,7 @@ exports.doctorLogin = async (req, res) => {
     }
 }
 //////////////////////////////////////////////
-exports.doctorLogout = async (req, res, next) => {
+exports.userLogout = async (req, res, next) => {
     try {
         console.log(req.cookies.jwt)
         const currentToken = await req.cookies.jwt;
@@ -255,14 +258,14 @@ exports.doctorLogout = async (req, res, next) => {
 
         const decoded = jwt.verify(currentToken, process.env.JWT_SECRETE_KEY)
 
-        const currentDoctor = await Doctor.findById(decoded.id);
-        if (!currentDoctor) return res.status(401).send('The doctor belonging to this token does no longer exist.');
+        const currentUser = await User.findById(decoded.id);
+        if (!currentUser) return res.status(401).send('The user belonging to this token does no longer exist.');
 
-        if (currentDoctor.changedPasswordAfter(decoded.iat)) {
-            return res.status(401).send('Doctor recently changed password! Please log in again.');
+        if (currentUser.changedPasswordAfter(decoded.iat)) {
+            return res.status(401).send('User recently changed password! Please log in again.');
         }
-        currentDoctor.tokens = currentDoctor.tokens.filter(token => token !== currentToken);
-        currentDoctor.save();
+        currentUser.tokens = currentUser.tokens.filter(token => token !== currentToken);
+        currentUser.save();
 
         await res.cookie('jwt', 'logged out', {
             expires: new Date(Date.now() + 1),
@@ -294,19 +297,19 @@ exports.isLoggedIn = async (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRETE_KEY)
 
-        const currentDoctor = await Doctor.findById(decoded.id);
-        if (!currentDoctor) return res.status(401).send('This doctor does not longer exists.');
+        const currentUser = await User.findById(decoded.id);
+        if (!currentUser) return res.status(401).send('This user does not longer exists.');
 
-        const isTokenActive = currentDoctor.tokens.find(isToken => isToken === token);
+        const isTokenActive = currentUser.tokens.find(isToken => isToken === token);
         if (!isTokenActive) return res.status(401).send('You are not logged in, please login');
 
 
-        if (currentDoctor.changedPasswordAfter(decoded.iat)) {
-            return res.status(401).send('Doctor recently changed password! Please log in again.');
+        if (currentUser.changedPasswordAfter(decoded.iat)) {
+            return res.status(401).send('User recently changed password! Please log in again.');
         }
 
-        req.doctor = currentDoctor;
-        res.locals.doctor = currentDoctor;
+        req.user = currentUser;
+        res.locals.user = currentUser;
         next();
     } catch (err) {
         res.send(err.message);
@@ -317,18 +320,18 @@ exports.forgetPassword = async (req, res) => {
     const email = req.body.email;
     if (!email) return res.status(401).send('Please enter your email!');
 
-    const doctor = await Doctor.findOne({email});
-    if (!doctor) return res.status(401).send('There is no doctor with this email!')
+    const user = await User.findOne({email});
+    if (!user) return res.status(401).send('There is no user with this email!')
 
     try {
-        const resetToken = doctor.crateResetToken();
-        await doctor.save({validateBeforeSave: false});
+        const resetToken = user.crateResetToken();
+        await user.save({validateBeforeSave: false});
         res.status(200).send(await resetToken);
 
     } catch (err) {
-        doctor.passwordResetToken = undefined;
-        doctor.passwordResetExpires = undefined;
-        await doctor.save({validateBeforeSave: false})
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+        await user.save({validateBeforeSave: false})
         res.send(err.message);
     }
 }
@@ -337,22 +340,22 @@ exports.resetPassword = async (req, res) => {
     try {
         const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
-        const doctor = await Doctor.findOne({passwordResetToken: hashedToken, passwordResetExpires: {$gt: Date.now()}});
-        // const doctor = await Doctor.findOne({passwordResetToken: hashedToken});
-        if (!doctor) return res.status(401).send('This url is expired!');
+        const user = await User.findOne({passwordResetToken: hashedToken, passwordResetExpires: {$gt: Date.now()}});
+        // const user = await User.findOne({passwordResetToken: hashedToken});
+        if (!user) return res.status(401).send('This url is expired!');
 
         const {newPassword, confirmNewPassword} = req.body;
         if (!newPassword || !confirmNewPassword) return res.status(401).send('Please write password  and confirm password !');
         if (newPassword !== confirmNewPassword) return res.status(401).send('Confirm new password not match new password!');
 
-        doctor.password = newPassword;
-        doctor.passwordResetToken = undefined;
-        doctor.passwordResetExpires = undefined;
+        user.password = newPassword;
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
 
-        const token = createToken(doctor.id)
-        cookieToken("doctorJwt", token, req, res);
+        const token = createToken(user.id)
+        cookieToken("userJwt", token, req, res);
 
-        await doctor.save();
+        await user.save();
         res.status(200).send('Successful reset password');
     } catch (err) {
         return res.send(err.message);
@@ -362,16 +365,16 @@ exports.resetPassword = async (req, res) => {
 exports.updatePassword = async (req, res) => {
     try {
         const {currentPassword, newPassword, confirmNewPassword} = req.body;
-        const doctor = await Doctor.findById(req.doctor.id);
+        const user = await User.findById(req.user.id);
 
-        if (await doctor.comparePassword(currentPassword, v.password)) {
+        if (await user.comparePassword(currentPassword, v.password)) {
             if (newPassword !== confirmNewPassword) return res.status(401).send('New password not match confirm  new password!');
 
-            doctor.password = newPassword;
-            doctor.save({validateBeforeSave: true, new: true});
+            user.password = newPassword;
+            user.save({validateBeforeSave: true, new: true});
 
-            const token = createToken(doctor._id);
-            cookieToken("doctorJwt", token, req, res);
+            const token = createToken(user._id);
+            cookieToken("userJwt", token, req, res);
 
             res.status(200).json({
                 message: 'Password update successful'
@@ -386,7 +389,7 @@ exports.updatePassword = async (req, res) => {
 
 exports.agreeRole = (...roles) => {
     return (req, res, next) => {
-        if (!roles.includes(req.doctor.role)) {
+        if (!roles.includes(req.user.role)) {
             return res.status(403).send('You have not permission to enter this page!');
         }
         next();

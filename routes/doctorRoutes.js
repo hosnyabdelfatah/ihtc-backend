@@ -11,7 +11,7 @@ router.route('/').get(doctorController.getAllDoctors);
 
 router.route('/doctor-signup')
     .post(authDoctorController.uploadDoctorImage,
-        authDoctorController.resizeImage,
+        // authDoctorController.resizeImage,
         authDoctorController.doctorSignUp);
 router.route('/login').post(authDoctorController.doctorLogin);
 router.route('/forgotPassword').post(authDoctorController.forgetPassword);

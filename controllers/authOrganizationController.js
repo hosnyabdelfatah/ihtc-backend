@@ -93,7 +93,6 @@ exports.resizeImage = async (req, res, next) => {
     const namedFile = req.body.email;
     if (!namedFile) return res.status(404).send('Select category to update its image or write  category English name!');
 
-
     await sharp(req.file.buffer)
         .resize(300, 300)
         .toFormat('webp')

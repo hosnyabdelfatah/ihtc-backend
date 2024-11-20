@@ -11,6 +11,7 @@ const roleRoutes = require('./routes/roleRoutes');
 const languageRoutes = require('./routes/languageRoutes');
 const countryRoutes = require('./routes/countryRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
+const userRoutes = require('./routes/userRoutes');
 const campaignRoutes = require('./routes/campaignRoutes');
 
 const app = express();
@@ -48,9 +49,9 @@ app.use(express.static(path.join(__dirname, `public`)));
 
 
 //Middleware
-app.use(bodyParser.urlencoded({extended: false})) //Review it
+app.use(bodyParser.urlencoded({extended: false}))
 app.use(bodyParser.json());
-app.use(express.urlencoded({extended: true})); //Review it
+app.use(express.urlencoded({extended: true}));
 app.use(express.json({limit: "10kb"}));
 app.use(cookieParser());
 
@@ -64,6 +65,7 @@ app.use('/roles', roleRoutes);
 app.use('/languages', languageRoutes);
 app.use('/countries', countryRoutes);
 app.use('/doctors', doctorRoutes);
+app.use('/users', userRoutes);
 app.use('/campaigns', campaignRoutes);
 
 module.exports = app;
