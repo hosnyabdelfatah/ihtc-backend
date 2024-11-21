@@ -230,10 +230,9 @@ exports.doctorLogin = async (req, res) => {
                 description: doctor.description
             }
 
-            res.json({
+            res.status(200).json({
                 status: "success",
                 doctor: doctorData
-
             });
         } else {
             return res.status(401).send('Wrong email or password')

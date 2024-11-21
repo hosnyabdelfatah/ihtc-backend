@@ -38,7 +38,7 @@ const multerStorage = multer.diskStorage({
         let userImageDir = '';
 
         if (!fs.existsSync(`./public/images/users/${userUniqueId}`)) {
-            fs.mkdirSync(`./public/images/users/${userUniqueId}`);
+            fs.mkdirSync(`./public/images/users/${userUniqueId}`, {recursive: true});
             userImageDir = `./public/images/users/${userUniqueId}`
         } else {
             userImageDir = `./public/images/users/${userUniqueId}`
@@ -77,25 +77,26 @@ exports.uploadUserAvatar = upload.single('avatar');
 
 ///////// Resize Avatar /////////
 exports.resizeImage = async (req, res, next) => {
-    // console.log(`Fileis: ${req.file}`);
-    if (!req.file) return next();
 
-    await sharp(req.file)
+    if (!req.file) return next();
+    console.log(`Fileis: ${req.file.path}`);
+    await sharp(req.file.path)
         .resize(300, 300)
         .toFormat('webp')
         .webp({quality: 90})
         .toFile(`./public/images/users/${userUniqueId}/${userUniqueId}-avatar.webp`);
+
     next();
 }
 ////////////////////////////////////////
 
 exports.userSignUp = async (req, res) => {
-    console.log(req.file)
+    // console.log(req.file)
     console.log(req.body)
     try {
         const errMessages = [];
         let eMessages = ``;
-        let image = ``;
+        let avatar = ``;
 
         const userInfo = ["fname", "lname", "email", "password", "passwordConfirm",
             "whatsapp", "description", "workPlace", "facebookId", "specialty",
@@ -121,38 +122,57 @@ exports.userSignUp = async (req, res) => {
             return res.status(400).send(eMessages);
         }
         if (req.file) {
-            // ./public/images/user/${userUniqueId}`
-            console.log(`FILE 125: ${JSON.stringify(req.file)}`)
-            avatar = `${req.protocol}://${req.get('host')}/images/user/${userUniqueId}/${userUniqueId}-avatar.webp`;
+            avatar = `${req.protocol}://${req.get('host')}/images/users/${userUniqueId}/${userUniqueId}-avatar.webp`;
         } else {
-            avatar = `${req.protocol}://${req.get('host')}/images/user/avatar.jpeg`;
+            avatar = `${req.protocol}://${req.get('host')}/images/users/avatar.jpeg`;
         }
-        console.log(avatar)
+
         const userRequest = filterBody(req.body, ...userInfo);
-        // console.log(userRequest)
+
         const isExistsUser = await User.findOne({email})
 
         if (isExistsUser) return res.status(400).send(`User with Email ${email} is already exists! `);
 
         const newUser = await User.create({...userRequest, avatar, uniqueId: userUniqueId});
 
-        console.log(newUser._id)
-        const token = createToken({id: newUser._id});
-
-        // console.log(`TOKEN IS: ${token}`)
-        // newUser.tokens.push(token);
-        // newUser.save();
-
         const url = `${req.protocol}://${req.get('host')}`;
 
+        const user = await User.findOne({uniqueId: userUniqueId}).populate([
+            {path: "language", model: "Language", select: "title"},
+            {path: "country", model: "Country", select: "title"},
+            {
+                path: "specialty",
+                model: "DoctorSpecialty",
+                select: "title"
+            }
+        ]);
+
+        const token = jwt.sign({id: user._id}, process.env.JWT_SECRET_KEY, {
+            expiresIn: process.env.JWT_EXPIRES_IN,
+        });
+
+        user.tokens.push(token)
+        console.log(`Token is: ${token}`)
+        user.save({validateBeforeSave: false})
 
         cookieToken("userJwt", token, req, res);
 
         await new Email(newUser, url).sendWelcome();
 
+
+        if (!user) return res.status(400).send('You are not logged in please login!');
+
         res.status(201).json({
             status: "Success",
-            data: newUser.fname,
+            data: {
+                fname: user.fname,
+                lname: user.lname,
+                specialty: user.specialty.title,
+                title: user.jobTitle,
+                country: user.country.title,
+                language: user.language.title,
+                description: user.description
+            },
         });
     } catch (err) {
         console.log(JSON.stringify(err.message))
@@ -185,58 +205,50 @@ exports.activateUser = async (req, res) => {
 
 //////////////////////////////////////////////
 exports.userLogin = async (req, res) => {
-
-    const {user, password} = req.body;
-    if (!user || !password) return res.status(400).send('Please enter your user  and password');
-    // console.log(req.cookies['jwt']);
-
-    console.log(`USER PASSWORD IS:  ${req.body.password}`)
-
     try {
-        let user
-        if (user.startsWith('D-'))
-            user = await User.findOne({uniqueId: user}).exec();
-        else if (user.indexOf('@') !== -1)
-            user = await User.findOne({email: user}).populate([
-                {path: "language", model: "Language", select: "title"},
-                {path: "country", model: "Country", select: "title"},
-                {
-                    path: "specialty",
-                    model: "UserSpecialty",
-                    select: "title"
-                }
-            ]);
+        const email = req.body.user;
+        const password = req.body.password;
 
+        if (!email || !password) return res.status(400).send('Please enter your user  and password');
+
+        const user = await User.findOne({email}).populate([
+            {path: "language", model: "Language"},
+            {path: "country", model: "Country"},
+            {path: "specialty", model: "DoctorSpecialty"}
+        ]);
 
         if (!user) return res.status(404).send('There is no user with this email!');
 
-        const rightPassword = await user.correctPassword(password, user.password)
+        console.log(user)
+        console.log(password, user.password)
+        const rightPassword = await user.comparePasswords(password, user?.password)
         if (!rightPassword) return res.status(400).send('Email or password not correct');
-
 
         if (user && rightPassword) {
             if (!req.cookies['jwt']) {
-                const token = createToken(user._id)
-                console.log(`New user token is: ${token}`)
+                const token = jwt.sign({id: user._id}, process.env.JWT_SECRET_KEY, {
+                    expiresIn: process.env.JWT_EXPIRES_IN,
+                });
+
                 cookieToken("userJwt", token, req, res);
                 user.tokens.push(token);
                 user.save();
             }
 
+
             const userData = {
-                firstName: user.fname,
-                lastName: user.lname,
-                profileImage: user.image,
-                country: user.country.title,
-                specialty: user.specialty.title,
-                language: user.language.title,
-                description: user.description
+                firstName: user?.fname,
+                lastName: user?.lname,
+                profileImage: user?.avatar,
+                country: user?.country.title,
+                language: user?.language.title,
+                specialty: user?.specialty.title,
+                description: user?.description
             }
 
-            res.json({
+            res.status(200).json({
                 status: "success",
                 user: userData
-
             });
         } else {
             return res.status(401).send('Wrong email or password')

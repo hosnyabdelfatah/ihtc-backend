@@ -11,7 +11,7 @@ router.route('/').get(userController.getAllUsers);
 
 router.route('/user-signup')
     .post(authUserController.uploadUserAvatar,
-        // authUserController.resizeImage,
+        authUserController.resizeImage,
         authUserController.userSignUp);
 router.route('/login').post(authUserController.userLogin);
 router.route('/forgotPassword').post(authUserController.forgetPassword);
