@@ -47,14 +47,13 @@ var storage = multer.diskStorage({
         let ext;
 
         if (file.fieldname === 'logo') {
-            logoName = `${req.body.email}-logo`
+            logoName = `${organizationUniqueId}-logo`
             ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
-            console.log(logoName = `${req.body.email}-logo`
-                + '.' + ext)
+            console.log(logoName = `${organizationUniqueId}-logo` + '.' + ext)
 
             cb(null, logoName + '.' + ext);
         } else if (file.fieldname === 'banner') {
-            bannerName = `${req.body.email}-banner`
+            bannerName = `${organizationUniqueId}-banner`
             // console.log()
             ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
             console.log(bannerName + '.' + ext)
@@ -135,9 +134,9 @@ exports.organizationSignup = async (req, res) => {
 
         const organizationRequest = filterBody(req.body, ...organizationInfo);
 
-        logo = `${req.protocol}://${req.get('host')}/images/organizations/${organizationUniqueId}/${email.toLowerCase()}-logo.webp`;
+        logo = `${req.protocol}://${req.get('host')}/images/organizations/${organizationUniqueId}/${organizationUniqueId}-logo.webp`;
 
-        banner = `${req.protocol}://${req.get('host')}/images/organizations/${organizationUniqueId}/${email.toLowerCase()}-banner.webp`;
+        banner = `${req.protocol}://${req.get('host')}/images/organizations/${organizationUniqueId}/${organizationUniqueId}-banner.webp`;
 
         const newOrganization = await Organization.create({
             ...organizationRequest,
