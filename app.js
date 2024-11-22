@@ -21,24 +21,30 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
     : ["http://localhost:3000"];
 
 const corsOptions = {
-    origin: allowedOrigins,
-    credentials: true,
-    optionsSuccessStatus: 200,
-    allowedHeaders: 'Content-Type,Authorization',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true, // Allow credentials like cookies
+    optionsSuccessStatus: 200, // For legacy browsers
+    allowedHeaders: 'Content-Type,Authorization', // Allowed headers
 };
 
+// Apply CORS middleware globally
 app.use(cors(corsOptions));
 
+// Handle preflight requests globally
+app.options('*', cors(corsOptions));
+
+// Referrer Policy Middleware (optional)
 app.use((req, res, next) => {
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-    res.setHeader("Access-Control-Allow-Headers", "x-access-token, Origin, X-Requested-With, Content-Type, Accept");
-    res.setHeader("Access-Control-Allow-Credentials", true);
-    res.setHeader("Access-Control-Allow-Origin", "https://ihtc-frontend.vercel.app");
-    res.setHeader("Access-Control-Max-Age", "1800");
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     next();
 });
-
 app.use(morgan('tiny'));
 
 app.set("view engine", "pug");
