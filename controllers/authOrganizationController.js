@@ -49,7 +49,7 @@ var storage = multer.diskStorage({
         if (file.fieldname === 'logo') {
             logoName = `${organizationUniqueId}-logo`
             ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
-            console.log(logoName = `${organizationUniqueId}-logo` + '.' + ext)
+            console.log(`${organizationUniqueId}-logo.${ext}`)
 
             cb(null, logoName + '.' + ext);
         } else if (file.fieldname === 'banner') {
@@ -81,26 +81,8 @@ const upload = multer({
 exports.uploadOrganizationImages = upload.fields(
     [{name: 'logo', maxCount: 1}, {name: 'banner', maxCount: 1}]
 );
-// exports.uploadOrganizationBanner = upload.single('banner');
 /////////////////////////
 
-///////// Resize Avatar /////////
-exports.resizeImage = async (req, res, next) => {
-    // console.log(`File is: ${req.file}`);
-    if (!req.file) return next();
-
-    const namedFile = req.body.email;
-    if (!namedFile) return res.status(404).send('Select category to update its image or write  category English name!');
-
-    await sharp(req.file.buffer)
-        .resize(300, 300)
-        .toFormat('webp')
-        .webp({quality: 90})
-        .toFile(`./public/images/organization/${organizationUniqueId}/${namedFile.toLowerCase()}-logo.webp`);
-
-    next();
-}
-////////////////////////////////////////
 
 exports.organizationSignup = async (req, res) => {
     console.log(`REQ.FILE IS: ${JSON.stringify(req.body)}`)

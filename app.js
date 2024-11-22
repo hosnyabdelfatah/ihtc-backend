@@ -20,6 +20,7 @@ const app = express();
 const corsOptions = {
     origin: [
         "https://ihtc.vercel.app",
+        "https://ihtc-backend.vercel.app/organizations/organization-signup",
         "https://ihtc-hosnyabdelfatahs-projects.vercel.app",
         "https://ihtc-a875ks9gv-hosnyabdelfatahs-projects.vercel.app",
         "https://ihtc-frontend.vercel.app",
