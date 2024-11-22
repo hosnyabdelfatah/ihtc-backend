@@ -230,7 +230,16 @@ exports.organizationLogin = async (req, res) => {
             const {name, logo, banner, description, industryField, country, language, _id, uniqueId} = organization;
             // console.log(banner)
             res.json({
-                organization: {name, logo, banner, description, country, industryField, language, _id, uniqueId},
+                organization: {
+                    name,
+                    logo,
+                    banner,
+                    description,
+                    country,
+                    industryField,
+                    language,
+                    uniqueId
+                },
                 token: token
             });
         } else {
