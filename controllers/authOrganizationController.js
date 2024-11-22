@@ -144,11 +144,16 @@ exports.organizationSignup = async (req, res) => {
             uniqueId: organizationUniqueId
         });
 
-        const token = createToken(newOrganization._id)
+
         // console.log(token);
         const url = `${req.protocol}://${req.get('host')}`;
         // console.log(url);
         await new Email(newOrganization, url).sendWelcome();
+
+        const token = jwt.sign({id: newOrganization._id}, process.env.JWT_SECRET_KEY, {
+            expiresIn: process.env.JWT_EXPIRES_IN,
+        });
+
         newOrganization.tokens.push(token);
         newOrganization.save();
 
