@@ -16,19 +16,12 @@ const campaignRoutes = require('./routes/campaignRoutes');
 
 const app = express();
 
+const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? ["https://ihtc-frontend.vercel.app", "https://ihtc-backend.vercel.app"]
+    : ["http://localhost:3000"];
 
 const corsOptions = {
-    // origin: [
-    //     "https://ihtc.vercel.app",
-    //     "https://ihtc-backend.vercel.app/organizations/organization-signup",
-    //     "https://ihtc-hosnyabdelfatahs-projects.vercel.app",
-    //     "https://ihtc-a875ks9gv-hosnyabdelfatahs-projects.vercel.app",
-    //     "https://ihtc-frontend.vercel.app",
-    //     "https://ihtc-frontend.vercel.app/*",
-    //     "https://ihtc-2q6h2anet-hosnyabdelfatahs-projects.vercel.app",
-    //     "http://localhost:3000"
-    // ],
-    origin: "*",
+    origin: allowedOrigins,
     credentials: true,
     optionsSuccessStatus: 200,
     allowedHeaders: 'Content-Type,Authorization',
@@ -40,6 +33,7 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
     res.setHeader("Access-Control-Allow-Headers", "x-access-token, Origin, X-Requested-With, Content-Type, Accept");
     res.setHeader("Access-Control-Allow-Credentials", true);
+    res.setHeader("Access-Control-Allow-Origin", "https://ihtc-frontend.vercel.app");
     res.setHeader("Access-Control-Max-Age", "1800");
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     next();
