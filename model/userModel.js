@@ -74,15 +74,15 @@ const userSchema = new Schema({
 
 ///////////////
 
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-
-    //Hash the password with cost 12
-    this.password = await bcrypt.hash(this.password, 12);
-    //Delete passwordConfirm field
-    this.passwordConfirm = undefined;
-    next();
-});
+// userSchema.pre('save', async function (next) {
+//     if (!this.isModified('password')) return next();
+//
+//     //Hash the password with cost 12
+//     this.password = await bcrypt.hash(this.password, 12);
+//     //Delete passwordConfirm field
+//     this.passwordConfirm = undefined;
+//     next();
+// });
 
 // userSchema.
 
@@ -93,12 +93,12 @@ userSchema.pre('save', function (next) {
 });
 
 
-userSchema.methods.comparePasswords = async function (
-    candidatePassword,
-    userPassword
-) {
-    return await bcrypt.compare(candidatePassword, userPassword);
-};
+// userSchema.methods.comparePasswords = async function (
+//     candidatePassword,
+//     userPassword
+// ) {
+//     return await bcrypt.compare(candidatePassword, userPassword);
+// };
 
 userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
     if (this.passwordChangedAt) {

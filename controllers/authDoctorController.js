@@ -188,14 +188,15 @@ exports.doctorLogin = async (req, res) => {
     if (!user || !password) return res.status(400).send('Please enter your user  and password');
     // console.log(req.cookies['jwt']);
 
+    console.log(`USER  IS:  ${req.body.user}`)
     console.log(`USER PASSWORD IS:  ${req.body.password}`)
 
     try {
         let doctor
         if (user.startsWith('D-'))
-            doctor = await Doctor.findOne({uniqueId: user}).exec();
+            doctor = await Doctor.findOne({uniqueId: user.trim(0)}).exec();
         else if (user.indexOf('@') !== -1)
-            doctor = await Doctor.findOne({email: user}).populate([
+            doctor = await Doctor.findOne({email: user.trim()}).populate([
                 {path: "language", model: "Language", select: "title"},
                 {path: "country", model: "Country", select: "title"},
                 {
