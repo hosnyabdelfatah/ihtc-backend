@@ -145,6 +145,5 @@ doctorSchema.methods.createPasswordResetToken = function () {
     return resetToken;
 };
 
-
 const Doctor = mongoose.model('Doctor', doctorSchema);
 module.exports = Doctor;
