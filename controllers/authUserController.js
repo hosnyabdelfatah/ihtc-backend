@@ -380,9 +380,21 @@ exports.updatePassword = async (req, res) => {
         const {currentPassword, newPassword, confirmNewPassword} = req.body;
         const user = await User.findById(req.user.id);
 
-        if (await user.comparePassword(currentPassword, v.password)) {
-            if (newPassword !== confirmNewPassword) return res.status(401).send('New password not match confirm  new password!');
+        // if (await user.comparePassword(currentPassword, v.password)) {
+        //     if (newPassword !== confirmNewPassword) return res.status(401).send('New password not match confirm  new password!');
+        //
+        //     user.password = newPassword;
+        //     user.save({validateBeforeSave: true, new: true});
+        //
+        //     const token = createToken(user._id);
+        //     cookieToken("userJwt", token, req, res);
+        //
+        //     res.status(200).json({
+        //         message: 'Password update successful'
+        //     });
+        // }
 
+        if (user) {
             user.password = newPassword;
             user.save({validateBeforeSave: true, new: true});
 
