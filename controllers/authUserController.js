@@ -148,7 +148,7 @@ exports.userSignUp = async (req, res) => {
         ]);
 
         const token = jwt.sign({id: user._id}, process.env.JWT_SECRET_KEY, {
-            expiresIn: process.env.JWT_EXPIRES_IN,
+            expiresIn: process.env.JWT_EXPIRES_IN * 24 * 60 * 60 * 1000,
         });
 
         user.tokens.push(token)
@@ -228,7 +228,7 @@ exports.userLogin = async (req, res) => {
         if (user && rightPassword) {
             if (!req.cookies['jwt']) {
                 const token = jwt.sign({id: user._id}, process.env.JWT_SECRET_KEY, {
-                    expiresIn: process.env.JWT_EXPIRES_IN,
+                    expiresIn: process.env.JWT_EXPIRES_IN * 24 * 60 * 60 * 1000,
                 });
 
                 cookieToken("userJwt", token, req, res);
