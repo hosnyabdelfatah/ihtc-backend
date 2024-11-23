@@ -164,15 +164,16 @@ exports.userSignUp = async (req, res) => {
 
         res.status(201).json({
             status: "Success",
-            data: {
-                fname: user.fname,
-                lname: user.lname,
-                specialty: user.specialty.title,
-                title: user.jobTitle,
-                country: user.country.title,
-                language: user.language.title,
-                description: user.description
-            },
+            data: user
+            // data: {
+            //     fname: user.fname,
+            //     lname: user.lname,
+            //     specialty: user.specialty,
+            //     title: user.jobTitle,
+            //     country: user.country,
+            //     language: user.language,
+            //     description: user.description
+            // },
         });
     } catch (err) {
         console.log(JSON.stringify(err.message))
