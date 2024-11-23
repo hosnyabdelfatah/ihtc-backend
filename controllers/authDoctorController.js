@@ -209,12 +209,12 @@ exports.doctorLogin = async (req, res) => {
 
         if (!doctor) return res.status(404).send('There is no doctor with this email!');
 
-        // const rightPassword = await doctor.correctPassword(password, doctor.password)
-        // if (!rightPassword) return res.status(400).send('Email or password not correct');
+        const rightPassword = await doctor.correctPassword(password, doctor.password)
+        if (!rightPassword) return res.status(400).send('Email or password not correct');
 
 
-        // if (doctor && rightPassword) {
-        if (doctor) {
+        if (doctor && rightPassword) {
+
             if (!req.cookies['jwt']) {
                 const token = createToken(doctor._id)
                 cookieToken("doctorJwt", token, req, res);

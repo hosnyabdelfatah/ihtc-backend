@@ -95,15 +95,15 @@ const doctorSchema = new Schema({
         toObject: {virtuals: true},
     });
 
-// doctorSchema.pre('save', async function (next) {
-//     if (!this.isModified('password')) return next();
-//
-//     //Hash the password with cost 12
-//     this.password = await bcrypt.hash(this.password, 12);
-//     //Delete passwordConfirm field
-//     this.passwordConfirm = undefined;
-//     next();
-// });
+doctorSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) return next();
+
+    //Hash the password with cost 12
+    this.password = await bcrypt.hash(this.password, 12);
+    //Delete passwordConfirm field
+    this.passwordConfirm = undefined;
+    next();
+});
 
 doctorSchema.pre('save', function (next) {
     if (!this.isModified || this.isNew) return next();
@@ -112,12 +112,12 @@ doctorSchema.pre('save', function (next) {
 });
 
 
-// doctorSchema.methods.correctPassword = async function (
-//     candidatePassword,
-//     doctorPassword
-// ) {
-//     return await bcrypt.compare(candidatePassword, doctorPassword);
-// };
+doctorSchema.methods.correctPassword = async function (
+    candidatePassword,
+    doctorPassword
+) {
+    return await bcrypt.compare(candidatePassword, doctorPassword);
+};
 
 doctorSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
     if (this.passwordChangedAt) {
