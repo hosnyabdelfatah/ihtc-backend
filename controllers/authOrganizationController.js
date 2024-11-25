@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 const multer = require("multer");
+const cloudinary = require('cloudinary').v2;
+const {Readable} = require('stream');
 const sharp = require("sharp");
 const crypto = require('crypto');
 const Organization = require("../model/organizationModel");
@@ -30,40 +32,47 @@ const cookieToken = (name, token, req, res) => {
 }
 //////////////////////////////////////////////
 
-var storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        let organizationImageDir = '';
-        if (!fs.existsSync(`./public/images/organizations/${organizationUniqueId}`)) {
-            fs.mkdirSync(`./public/images/organizations/${organizationUniqueId}`);
-            organizationImageDir = `./public/images/organizations/${organizationUniqueId}`
-        } else {
-            organizationImageDir = `./public/images/organizations/${organizationUniqueId}`
-        }
-        cb(null, organizationImageDir)
-    },
-    filename: (req, file, cb) => {
-        let logoName;
-        let bannerName;
-        let ext;
+// var storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//         let organizationImageDir = '';
+//         if (!fs.existsSync(`./public/images/organizations/${organizationUniqueId}`)) {
+//             fs.mkdirSync(`./public/images/organizations/${organizationUniqueId}`);
+//             organizationImageDir = `./public/images/organizations/${organizationUniqueId}`
+//         } else {
+//             organizationImageDir = `./public/images/organizations/${organizationUniqueId}`
+//         }
+//         cb(null, organizationImageDir)
+//     },
+//     filename: (req, file, cb) => {
+//         let logoName;
+//         let bannerName;
+//         let ext;
+//
+//         if (file.fieldname === 'logo') {
+//             logoName = `${organizationUniqueId}-logo`
+//             ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
+//             console.log(`${organizationUniqueId}-logo.${ext}`)
+//
+//             cb(null, logoName + '.' + ext);
+//         } else if (file.fieldname === 'banner') {
+//             bannerName = `${organizationUniqueId}-banner`
+//             // console.log()
+//             ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
+//             console.log(bannerName + '.' + ext)
+//             cb(null, bannerName + '.' + ext);
+//         } else {
+//             cb(new Error('Invalid field name'));
+//         }
+//     }
+//
+// })
 
-        if (file.fieldname === 'logo') {
-            logoName = `${organizationUniqueId}-logo`
-            ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
-            console.log(`${organizationUniqueId}-logo.${ext}`)
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-            cb(null, logoName + '.' + ext);
-        } else if (file.fieldname === 'banner') {
-            bannerName = `${organizationUniqueId}-banner`
-            // console.log()
-            ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
-            console.log(bannerName + '.' + ext)
-            cb(null, bannerName + '.' + ext);
-        } else {
-            cb(new Error('Invalid field name'));
-        }
-    }
-
-})
 
 const multerFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('image')) {
@@ -72,11 +81,16 @@ const multerFilter = (req, file, cb) => {
         cb('Not an image! Please upload only image.', false);
     }
 }
-//
+
 const upload = multer({
-    storage: storage,
+    storage: multer.memoryStorage(),
     fileFilter: multerFilter
 });
+//
+// const upload = multer({
+//     storage: storage,
+//     fileFilter: multerFilter
+// });
 
 exports.uploadOrganizationImages = upload.fields(
     [{name: 'logo', maxCount: 1}, {name: 'banner', maxCount: 1}]
@@ -88,6 +102,39 @@ exports.organizationSignup = async (req, res) => {
     console.log(`REQ.FILE IS: ${JSON.stringify(req.body)}`)
     console.log(`REQ.FILE IS: ${req.file}`)
     try {
+        const files = req.files;
+        if (!files.banner || !files.logo) {
+            return res.status(400).json({error: 'Both banner and logo are required.'});
+        }
+
+        const uploadToCloudinary = (fileBuffer, folderName) => {
+            return new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {folder: folderName},
+                    (error, result) => {
+                        if (error) reject(error);
+                        else resolve(result.secure_url);
+                    }
+                );
+
+                Readable.from(fileBuffer).pipe(stream);
+            });
+        };
+
+        // Upload banner
+        const bannerUrl = await uploadToCloudinary(
+            files.banner[0].buffer,
+            'banners' // Folder name in Cloudinary
+        );
+
+        // Upload logo
+        const logoUrl = await uploadToCloudinary(
+            files.logo[0].buffer,
+            'logos' // Folder name in Cloudinary
+        );
+
+        // Return the uploaded URLs
+
         let logo = ``;
         let banner = ``;
         const errMessages = [];
@@ -116,9 +163,9 @@ exports.organizationSignup = async (req, res) => {
 
         const organizationRequest = filterBody(req.body, ...organizationInfo);
 
-        logo = `${req.protocol}://${req.get('host')}/images/organizations/${organizationUniqueId}/${organizationUniqueId}-logo.webp`;
+        logo = logoUrl;
 
-        banner = `${req.protocol}://${req.get('host')}/images/organizations/${organizationUniqueId}/${organizationUniqueId}-banner.webp`;
+        banner = bannerUrl;
 
         const newOrganization = await Organization.create({
             ...organizationRequest,
@@ -143,9 +190,11 @@ exports.organizationSignup = async (req, res) => {
 
 
         res.status(201).json({
-            status: "Success",
+            status: "success",
             token,
-            organization: newOrganization.name,
+            data: {
+                name: newOrganization.name,
+            },
         });
     } catch (err) {
         console.log(JSON.stringify(err.message))
