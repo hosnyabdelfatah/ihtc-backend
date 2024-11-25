@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
-const sharp = require('sharp');
+// const sharp = require('sharp');
+const cloudinary = require('cloudinary').v2
+const {Readable} = require('stream');
 const Doctor = require('../model/doctorModel');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
@@ -30,32 +32,37 @@ const cookieToken = (name, token, req, res) => {
 }
 
 ///////////////////////// Multer
-const multerStorage = multer.diskStorage({
+// const multerStorage = multer.diskStorage({
+//
+//     destination: (req, file, cb) => {
+//         console.log("32" + req.file)
+//         console.log("33" + file)
+//         let doctorImageDir = '';
+//
+//         if (!fs.existsSync(`./public/images/doctor/${doctorUniqueId}`)) {
+//             fs.mkdirSync(`./public/images/doctor/${doctorUniqueId}`);
+//             doctorImageDir = `./public/images/doctor/${doctorUniqueId}`
+//         } else {
+//             doctorImageDir = `./public/images/doctor/${doctorUniqueId}`
+//         }
+//         cb(null, doctorImageDir)
+//     },
+//     filename: (req, file, cb) => {
+//         const fileName = file.originalname.slice(0, file.originalname.lastIndexOf('.'))
+//         const ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
+//         console.log(fileName + "_" + Date.now() + "." + ext)
+//         cb(null, doctorUniqueId + "." + ext);
+//     }
+// });
 
-    destination: (req, file, cb) => {
-        console.log("32" + req.file)
-        console.log("33" + file)
-        let doctorImageDir = '';
-
-        if (!fs.existsSync(`./public/images/doctor/${doctorUniqueId}`)) {
-            fs.mkdirSync(`./public/images/doctor/${doctorUniqueId}`);
-            doctorImageDir = `./public/images/doctor/${doctorUniqueId}`
-        } else {
-            doctorImageDir = `./public/images/doctor/${doctorUniqueId}`
-        }
-        cb(null, doctorImageDir)
-    },
-    filename: (req, file, cb) => {
-        const fileName = file.originalname.slice(0, file.originalname.lastIndexOf('.'))
-        const ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
-        console.log(fileName + "_" + Date.now() + "." + ext)
-        cb(null, doctorUniqueId + "." + ext);
-    }
-});
+cloudinary.config({
+    cloud_name: process.env.COUDINARY_CLOUD_NAME,
+    api_key: process.env.COUDINARY_API_KEY,
+    api_secret: process.env.COUDINARY_API_SECRET,
+})
+const upload = multer({storage: multer.memoryStorage()});
 
 const multerFilter = (req, file, cb) => {
-
-    console.log("53" + file)
     if (file.mimetype.startsWith('image')) {
         cb(null, true);
     } else {
@@ -63,7 +70,7 @@ const multerFilter = (req, file, cb) => {
     }
 }
 
-const upload = multer({
+const doctorUploadImage = multer({
     storage: multerStorage,
     fileFilter: multerFilter
 });
@@ -72,29 +79,41 @@ exports.uploadDoctorImage = upload.single('image');
 /////////////////////////
 
 ///////// Resize Avatar /////////
-exports.resizeImage = async (req, res, next) => {
-    // console.log(`Fileis: ${req.file}`);
-    if (!req.file) return next();
-
-    const namedFile = req.body.email;
-    if (!namedFile) return res.status(404).send('Select category to update its image or write  category English name!');
-
-
-    await sharp(req.file.buffer)
-        .resize(300, 300)
-        .toFormat('webp')
-        .webp({quality: 90})
-        .toFile(`./public/images/doctor/${doctorUniqueId.toLowerCase()}.webp`);
-
-    next();
-}
+// exports.resizeImage = async (req, res, next) => {
+//     // console.log(`Fileis: ${req.file}`);
+//     if (!req.file) return next();
+//
+//     const namedFile = req.body.email;
+//     if (!namedFile) return res.status(404).send('Select category to update its image or write  category English name!');
+//
+//
+//     await sharp(req.file.buffer)
+//         .resize(300, 300)
+//         .toFormat('webp')
+//         .webp({quality: 90})
+//         .toFile(`./public/images/doctor/${doctorUniqueId.toLowerCase()}.webp`);
+//
+//     next();
+// }
 ////////////////////////////////////////
 
 exports.doctorSignUp = async (req, res) => {
     try {
+        const fileBuffer = req.file.buffer;
         const errMessages = [];
         let eMessages = ``;
         let image = ``;
+
+        const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream((error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+            });
+            // Convert buffer to stream
+            Readable.from(fileBuffer).pipe(stream);
+        });
+
+        const fileUrl = uploadResult.secure_url;
 
         const doctorInfo = ["fname", "lname", "email", "password", "passwordConfirm",
             "whatsapp", "description", "workPlace", "facebookId", "specialty",
@@ -121,9 +140,9 @@ exports.doctorSignUp = async (req, res) => {
         }
         if (req.file) {
             // ./public/images/doctor/${doctorUniqueId}`
-            image = `${req.protocol}://${req.get('host')}/images/doctor/${doctorUniqueId}/${doctorUniqueId}.webp`;
+            image = fileUrl;
         } else {
-            image = `${req.protocol}://${req.get('host')}/images/doctor/avatar.jpeg`;
+            image = `https://ihtc-backend.vercel.app/images/doctor/avatar.jpeg`;
         }
         console.log(image)
         const doctorRequest = filterBody(req.body, ...doctorInfo);

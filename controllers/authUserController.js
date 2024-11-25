@@ -7,7 +7,6 @@ const Email = require('../utils/email');
 const filterBody = require('../helpers/filterBody');
 const uuid = require('uuid');
 const cloudinary = require('cloudinary').v2
-// const {CloudinaryStorage} = require('multer-storage-cloudinary');
 const {Readable} = require('stream');
 const userUniqueId = `E-${uuid.v4()}`;
 
@@ -147,9 +146,9 @@ exports.userSignUp = async (req, res) => {
             return res.status(400).send(eMessages);
         }
         if (req.file) {
-            avatar = `${req.protocol}://${req.get('host')}/images/users/${userUniqueId}/${userUniqueId}-avatar.webp`;
+            avatar = fileUrl;
         } else {
-            avatar = `${req.protocol}://${req.get('host')}/images/users/avatar.jpeg`;
+            avatar = `https://ihtc-backend.vercel.app/images/users/avatar.jpeg`;
         }
 
         const userRequest = filterBody(req.body, ...userInfo);
@@ -189,16 +188,16 @@ exports.userSignUp = async (req, res) => {
 
         res.status(201).json({
             status: "Success",
-            data: user
-            // data: {
-            //     fname: user.fname,
-            //     lname: user.lname,
-            //     specialty: user.specialty,
-            //     title: user.jobTitle,
-            //     country: user.country,
-            //     language: user.language,
-            //     description: user.description
-            // },
+            // data: user
+            data: {
+                fname: user.fname,
+                lname: user.lname,
+                specialty: user.specialty,
+                title: user.jobTitle,
+                country: user.country,
+                language: user.language,
+                description: user.description
+            },
         });
     } catch (err) {
         console.log(JSON.stringify(err.message))
