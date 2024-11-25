@@ -71,7 +71,7 @@ const multerFilter = (req, file, cb) => {
 }
 
 const doctorUploadImage = multer({
-    storage: multerStorage,
+    storage: multer.memoryStorage,
     fileFilter: multerFilter
 });
 
