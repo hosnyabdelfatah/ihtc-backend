@@ -20,7 +20,13 @@ const app = express();
 //     ? ["https://ihtc-frontend.vercel.app", "https://ihtc-backend.vercel.app"]
 //     : ["http://localhost:3000"];
 
-const allowedOrigins = ["https://ihtc-frontend.vercel.app", "http://localhost:3000"]
+const allowedOrigins = [
+    "https://ihtc-frontend.vercel.app",
+    "https://ihtc-backend.vercel.app/languages",
+    "https://ihtc-backend.vercel.app/specialties",
+    "https://ihtc-backend.vercel.app/countries/",
+    "http://localhost:3000"
+]
 
 
 const corsOptions = {
