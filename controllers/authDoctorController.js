@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const sharp = require('sharp');
 const Doctor = require('../model/doctorModel');
+const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const Email = require('../utils/email');
 const filterBody = require('../helpers/filterBody');
@@ -192,6 +193,8 @@ exports.doctorLogin = async (req, res) => {
     console.log(`USER PASSWORD IS:  ${req.body.password}`)
 
     try {
+        const test = await bcrypt.hash("D-20241019112214128950", 12)
+        console.log(test)
         let doctor
         if (user.startsWith('D-'))
             doctor = await Doctor.findOne({uniqueId: user.trim(0)}).exec();

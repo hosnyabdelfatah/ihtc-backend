@@ -16,9 +16,12 @@ const campaignRoutes = require('./routes/campaignRoutes');
 
 const app = express();
 
-const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? ["https://ihtc-frontend.vercel.app", "https://ihtc-backend.vercel.app"]
-    : ["http://localhost:3000"];
+// const allowedOrigins = process.env.NODE_ENV === 'production'
+//     ? ["https://ihtc-frontend.vercel.app", "https://ihtc-backend.vercel.app"]
+//     : ["http://localhost:3000"];
+
+const allowedOrigins = ["https://ihtc-frontend.vercel.app", "http://localhost:3000"]
+
 
 const corsOptions = {
     origin: (origin, callback) => {

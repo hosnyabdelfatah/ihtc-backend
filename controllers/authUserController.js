@@ -6,8 +6,9 @@ const crypto = require('crypto');
 const Email = require('../utils/email');
 const filterBody = require('../helpers/filterBody');
 const uuid = require('uuid');
-const fs = require("fs");
-
+const cloudinary = require('cloudinary').v2
+// const {CloudinaryStorage} = require('multer-storage-cloudinary');
+const {Readable} = require('stream');
 const userUniqueId = `E-${uuid.v4()}`;
 
 const createToken = (id) => {
@@ -29,74 +30,98 @@ const cookieToken = (name, token, req, res) => {
     });
 }
 
+cloudinary.config({
+    cloud_name: process.env.COUDINARY_CLOUD_NAME,
+    api_key: process.env.COUDINARY_API_KEY,
+    api_secret: process.env.COUDINARY_API_SECRET,
+})
+const upload = multer({storage: multer.memoryStorage()});
+exports.uploadUserAvatar = upload.single('avatar')
+
+
 ///////////////////////// Multer
-const multerStorage = multer.diskStorage({
+// const multerStorage = multer.diskStorage({
+//
+//     destination: (req, file, cb) => {
+//         console.log("32" + req.file)
+//         console.log("33" + JSON.stringify(file))
+//         let userImageDir = '';
+//
+//         if (!fs.existsSync(`./public/images/users/${userUniqueId}`)) {
+//             fs.mkdirSync(`./public/images/users/${userUniqueId}`, {recursive: true});
+//             userImageDir = `./public/images/users/${userUniqueId}`
+//         } else {
+//             userImageDir = `./public/images/users/${userUniqueId}`
+//         }
+//         cb(null, userImageDir)
+//     },
+//     filename: (req, file, cb) => {
+//         if (!req.body.email) {
+//             console.log(`Email: ${req.body.email}`)
+//             // return false;
+//         }
+//         const avatarName = `${userUniqueId}-avatar`
+//         const fileName = file.originalname.slice(0, file.originalname.lastIndexOf('.'))
+//         const ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
+//         // console.log(fileName + "_" + Date.now() + "." + ext)
+//         console.log(avatarName + "." + ext)
+//         cb(null, avatarName + "." + ext);
+//     }
+// });
+//
+//
+// const multerFilter = (req, file, cb) => {
+//     if (file.mimetype.startsWith('image')) {
+//         cb(null, true);
+//     } else {
+//         cb('Not an image! Please upload only image.', false);
+//     }
+// }
 
-    destination: (req, file, cb) => {
-        console.log("32" + req.file)
-        console.log("33" + JSON.stringify(file))
-        let userImageDir = '';
 
-        if (!fs.existsSync(`./public/images/users/${userUniqueId}`)) {
-            fs.mkdirSync(`./public/images/users/${userUniqueId}`, {recursive: true});
-            userImageDir = `./public/images/users/${userUniqueId}`
-        } else {
-            userImageDir = `./public/images/users/${userUniqueId}`
-        }
-        cb(null, userImageDir)
-    },
-    filename: (req, file, cb) => {
-        if (!req.body.email) {
-            console.log(`Email: ${req.body.email}`)
-            // return false;
-        }
-        const avatarName = `${userUniqueId}-avatar`
-        const fileName = file.originalname.slice(0, file.originalname.lastIndexOf('.'))
-        const ext = file.originalname.slice(file.originalname.lastIndexOf('.') + 1, file.originalname.length);
-        // console.log(fileName + "_" + Date.now() + "." + ext)
-        console.log(avatarName + "." + ext)
-        cb(null, avatarName + "." + ext);
-    }
-});
+// const upload = multer({
+//     storage: multerStorage,
+//     fileFilter: multerFilter
+// });
 
-const multerFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image')) {
-        cb(null, true);
-    } else {
-        cb('Not an image! Please upload only image.', false);
-    }
-}
-
-const upload = multer({
-    storage: multerStorage,
-    fileFilter: multerFilter
-});
-
-exports.uploadUserAvatar = upload.single('avatar');
+// exports.uploadUserAvatar = upload.single('avatar');
 /////////////////////////
 
 ///////// Resize Avatar /////////
-exports.resizeImage = async (req, res, next) => {
-
-    if (!req.file) return next();
-    console.log(`Fileis: ${req.file.path}`);
-    await sharp(req.file.path)
-        .resize(300, 300)
-        .toFormat('webp')
-        .webp({quality: 90})
-        .toFile(`./public/images/users/${userUniqueId}/${userUniqueId}-avatar.webp`);
-
-    next();
-}
+// exports.resizeImage = async (req, res, next) => {
+//
+//     if (!req.file) return next();
+//     console.log(`Fileis: ${req.file.path}`);
+//     await sharp(req.file.path)
+//         .resize(300, 300)
+//         .toFormat('webp')
+//         .webp({quality: 90})
+//         .toFile(`./public/images/users/${userUniqueId}/${userUniqueId}-avatar.webp`);
+//
+//     next();
+// }
 ////////////////////////////////////////
 
 exports.userSignUp = async (req, res) => {
     // console.log(req.file)
     console.log(req.body)
     try {
+        const fileBuffer = req.file.buffer;
         const errMessages = [];
         let eMessages = ``;
         let avatar = ``;
+
+        const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream((error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+            });
+            // Convert buffer to stream
+            Readable.from(fileBuffer).pipe(stream);
+        });
+
+        const fileUrl = uploadResult.secure_url;
+        console.log(`Avatar URL is: ${fileUrl}`);
 
         const userInfo = ["fname", "lname", "email", "password", "passwordConfirm",
             "whatsapp", "description", "workPlace", "facebookId", "specialty",
@@ -394,17 +419,7 @@ exports.updatePassword = async (req, res) => {
             });
         }
 
-        // if (user) {
-        //     user.password = newPassword;
-        //     user.save({validateBeforeSave: true, new: true});
-        //
-        //     const token = createToken(user._id);
-        //     cookieToken("userJwt", token, req, res);
-        //
-        //     res.status(200).json({
-        //         message: 'Password update successful'
-        //     });
-        // }
+
     } catch (err) {
         console.log(err)
         return res.status(500).send(err.message)
