@@ -60,7 +60,7 @@ cloudinary.config({
     api_key: process.env.COUDINARY_API_KEY,
     api_secret: process.env.COUDINARY_API_SECRET,
 })
-const upload = multer({storage: multer.memoryStorage()});
+
 
 const multerFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('image')) {
@@ -70,7 +70,7 @@ const multerFilter = (req, file, cb) => {
     }
 }
 
-const doctorUploadImage = multer({
+const upload = multer({
     storage: multer.memoryStorage,
     fileFilter: multerFilter
 });
@@ -139,10 +139,9 @@ exports.doctorSignUp = async (req, res) => {
             return res.status(400).send(eMessages);
         }
         if (req.file) {
-            // ./public/images/doctor/${doctorUniqueId}`
             image = fileUrl;
         } else {
-            image = `https://ihtc-backend.vercel.app/images/doctor/avatar.jpeg`;
+            image = `https://res.cloudinary.com/dq8h1tfis/image/upload/v1732632603/ihtc/mte8snmyiarpvfhofp6k.jpg`;
         }
         console.log(image)
         const doctorRequest = filterBody(req.body, ...doctorInfo);
@@ -208,25 +207,15 @@ exports.doctorLogin = async (req, res) => {
     if (!user || !password) return res.status(400).send('Please enter your user  and password');
     // console.log(req.cookies['jwt']);
 
-    console.log(`USER  IS:  ${req.body.user}`)
-    console.log(`USER PASSWORD IS:  ${req.body.password}`)
+    // console.log(`USER  IS:  ${req.body.user}`)
+    // console.log(`USER PASSWORD IS:  ${req.body.password}`)
 
     try {
-        const test = await bcrypt.hash("D-20241019112214128950", 12)
-        console.log(test)
         let doctor
         if (user.startsWith('D-'))
             doctor = await Doctor.findOne({uniqueId: user.trim(0)}).exec();
         else if (user.indexOf('@') !== -1)
-            doctor = await Doctor.findOne({email: user.trim()}).populate([
-                {path: "language", model: "Language", select: "title"},
-                {path: "country", model: "Country", select: "title"},
-                {
-                    path: "specialty",
-                    model: "DoctorSpecialty",
-                    select: "title"
-                }
-            ]);
+            doctor = await Doctor.findOne({email: user.trim()})
 
 
         if (!doctor) return res.status(404).send('There is no doctor with this email!');
@@ -236,7 +225,15 @@ exports.doctorLogin = async (req, res) => {
 
 
         if (doctor && rightPassword) {
-
+            await doctor.populate([
+                {path: "language", model: "Language", select: "title"},
+                {path: "country", model: "Country", select: "title"},
+                {
+                    path: "specialty",
+                    model: "DoctorSpecialty",
+                    select: "title"
+                }
+            ]);
             if (!req.cookies['jwt']) {
                 const token = createToken(doctor._id)
                 cookieToken("doctorJwt", token, req, res);
@@ -245,6 +242,7 @@ exports.doctorLogin = async (req, res) => {
             }
 
             const doctorData = {
+                uniqueId: doctorUniqueId,
                 firstName: doctor.fname,
                 lastName: doctor.lname,
                 profileImage: doctor.image,

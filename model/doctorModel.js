@@ -35,7 +35,8 @@ const doctorSchema = new Schema({
         },
         image: {
             type: String,
-            required: true
+            required: true,
+            default: "https://res.cloudinary.com/dq8h1tfis/image/upload/v1732632603/ihtc/mte8snmyiarpvfhofp6k.jpg"
         },
         active: {
             type: Boolean,

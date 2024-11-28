@@ -16,6 +16,7 @@ router.route('/doctor-signup')
 router.route('/login').post(authDoctorController.doctorLogin);
 router.route('/forgotPassword').post(authDoctorController.forgetPassword);
 router.route('/resetPassword/:token').patch(authDoctorController.resetPassword);
+router.route('/:doctorId').get(doctorController.getDoctor);
 
 
 router.use(authDoctorController.isLoggedIn)
