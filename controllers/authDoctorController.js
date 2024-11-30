@@ -243,6 +243,7 @@ exports.doctorLogin = async (req, res) => {
 
             const doctorData = {
                 uniqueId: doctorUniqueId,
+                id: doctor._id,
                 firstName: doctor.fname,
                 lastName: doctor.lname,
                 profileImage: doctor.image,

@@ -20,12 +20,12 @@ exports.getAllUsers = async (req, res) => {
 
         const allUsers = await User.find(filter).skip(startIndex).limit(limit)
             .populate([
-                {path: "language", model: "Language", select: "title"},
-                {path: "country", model: "Country", select: "title"},
+                {path: "language", model: "Language", select: "title -_id "},
+                {path: "country", model: "Country", select: "title -_id"},
                 {
                     path: "specialty",
                     model: "UserSpecialty",
-                    select: "title"
+                    select: "title -_id"
                 }
             ]);
 

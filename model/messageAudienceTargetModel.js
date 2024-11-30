@@ -2,14 +2,14 @@ const mongoose = require('mongoose');
 
 const {Schema} = mongoose;
 
-const audienceTargetSchema = new Schema({
-    campaignUniqueId: {
+const messageAudienceTargetSchema = new Schema({
+    messageUniqueId: {
         type: String,
         required: true
     },
     receiver: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Doctor',
+        ref: 'Organization',
         required: true
     },
     status: {
@@ -24,6 +24,6 @@ const audienceTargetSchema = new Schema({
     toObject: {virtuals: true}
 });
 
-const AudienceTarget = mongoose.model('AudienceTarget', audienceTargetSchema);
+const MessageAudienceTarget = mongoose.model('MessageAudienceTarget', messageAudienceTargetSchema);
 
-module.exports = AudienceTarget;
+module.exports = MessageAudienceTarget;

@@ -13,6 +13,7 @@ const countryRoutes = require('./routes/countryRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
 const userRoutes = require('./routes/userRoutes');
 const campaignRoutes = require('./routes/campaignRoutes');
+const doctorMessageRoutes = require('./routes/doctorMessageRoutes');
 
 const app = express();
 
@@ -80,5 +81,6 @@ app.use('/countries', countryRoutes);
 app.use('/doctors', doctorRoutes);
 app.use('/users', userRoutes);
 app.use('/campaigns', campaignRoutes);
+app.use('/doctor-messages', doctorMessageRoutes);
 
 module.exports = app;

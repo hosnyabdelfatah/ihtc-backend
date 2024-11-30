@@ -20,12 +20,12 @@ exports.getAllDoctors = async (req, res) => {
 
         const allDoctors = await Doctor.find(filter).skip(startIndex).limit(limit)
             .populate([
-                {path: "language", model: "Language", select: "title"},
-                {path: "country", model: "Country", select: "title"},
+                {path: "language", model: "Language", select: "title -_id"},
+                {path: "country", model: "Country", select: "title -_id"},
                 {
                     path: "specialty",
                     model: "DoctorSpecialty",
-                    select: "title"
+                    select: "title -_id"
                 }
             ]);
 
@@ -51,12 +51,12 @@ exports.getDoctor = async (req, res) => {
         const doctorId = req.params.doctorId;
         console.log(doctorId)
         const doctor = await Doctor.findOne({_id: doctorId}).populate([
-            {path: "language", model: "Language", select: "title"},
-            {path: "country", model: "Country", select: "title"},
+            {path: "language", model: "Language", select: "title -_id"},
+            {path: "country", model: "Country", select: "title -_id"},
             {
                 path: "specialty",
                 model: "DoctorSpecialty",
-                select: "title"
+                select: "title -_id"
             }
         ]);
 

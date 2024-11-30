@@ -243,7 +243,12 @@ exports.organizationLogin = async (req, res) => {
         let token;
         if (organization && rightPassword) {
             if (!req.cookies['organizationJwt']) {
-                token = createToken(organization._id)
+                const token = jwt.sign({id: organization._id}, process.env.JWT_SECRET_KEY, {
+                    expiresIn: process.env.JWT_EXPIRES_IN,
+                });
+
+                organization.tokens.push(token);
+                organization.save();
                 cookieToken("organizationJwt", token, req, res);
                 // console.log(token)
                 organization.tokens.push(token);

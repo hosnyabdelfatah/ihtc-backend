@@ -1,15 +1,15 @@
-const fs = require('fs');
-const Campaign = require('../model/campaignModel');
-const AudienceTarget = require('../model/audienceTargetModel');
+// const fs = require('fs');
+const DoctorMessage = require('../model/doctorMessageModel');
+const MessageAudienceTarget = require('../model/messageAudienceTargetModel');
 const filterBody = require('../helpers/filterBody');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2
 const {Readable} = require('stream');
 const sharp = require('sharp');
 const uuid = require('uuid');
-const Email = require('../utils/email')
+const Email = require('../utils/email');
 
-const campaignUniqueId = `C-${uuid.v4()}`;
+const messageUniqueId = `M-${uuid.v4()}`;
 ///////////////////////// Multer
 
 // const multerStorage = multer.diskStorage({
@@ -60,7 +60,7 @@ const upload = multer({
     fileFilter: multerFilter
 });
 
-exports.uploadCampaignMedia = upload.single('attach');
+exports.uploadMessageMedia = upload.single('attach');
 ///////// Resize Image /////////
 // exports.resizeImage = async (req, res, next) => {
 //     // console.log(`File is: ${req.file}`);
@@ -80,19 +80,20 @@ exports.uploadCampaignMedia = upload.single('attach');
 //:TODO resize  video with sharp
 /////////////////////////
 
-exports.getAllCampaigns = async (req, res) => {
+exports.getAllDoctorMessagesOut = async (req, res) => {
     try {
-        let filter = {};
-        const organizationId = req.params.organizationId
-        console.log(organizationId)
-        if (organizationId) filter = {from: organizationId}
 
-        const allCampaigns = await Campaign.find(filter)
-            .populate({path: 'organization', model: 'Organization'});
+        const doctorId = req.params.doctorId
+        console.log(doctorId)
+
+
+        const allDoctorMessageOut = await DoctorMessage.find({from: doctorId})
+            .populate({path: 'from', model: 'Doctor'});
+
         res.status(200).json({
             status: 'success',
-            count: allCampaigns.length,
-            data: allCampaigns
+            count: allDoctorMessageOut.length,
+            data: allDoctorMessageOut
         });
     } catch (err) {
         console.log(err);
@@ -100,39 +101,39 @@ exports.getAllCampaigns = async (req, res) => {
     }
 }
 
-
-exports.getOneCampaign = async (req, res) => {
+exports.getOneMessage = async (req, res) => {
     try {
-        const id = req.params.campaignId;
-        if (!id) return res.status(400).send('Campaign Id is require');
+        const id = req.params.messageId;
+        if (!id) return res.status(400).send('Message ID is required select message or enter its ID!');
 
-        const campaign = await Campaign.findById(id)
+        const message = await DoctorMessage.findById(id)
             .populate({path: 'organization', model: 'Organization'});
-        if (!campaign) return res.status(404).send('There is no campaign with this ID!');
+
+        if (!message) return res.status(404).send('There is no message with this ID!');
 
         res.status(200).json({
             status: 'success',
-            data: campaign
+            data: message
         });
     } catch (err) {
         console.log(err);
-        res.status(500).send(err.message);
+        res.status(500).send('There is no message with this ID!')
     }
 }
 
-exports.createCampaign = async (req, res) => {
+exports.createMessage = async (req, res) => {
+
     try {
-
         const fileBuffer = req.file.buffer;
-        let newCampaign;
-        let createAudience;
-        let receivers;
+        let newMessage;
+        let sender;
+        let receiver;
         let attach;
-        let {subject, from, to, status} = req.body;
 
+        console.log(req.body);
 
-        const keys = ["subject", "from", "to", "status", "campaignText"];
-        const campaignRequest = filterBody(req.body, ...keys);
+        const keys = ["subject", "from", "to", "status", "messageText"];
+        const messagenRequest = filterBody(req.body, ...keys);
 
         const uploadResult = await new Promise((resolve, reject) => {
             const stream = cloudinary.uploader.upload_stream((error, result) => {
@@ -146,22 +147,17 @@ exports.createCampaign = async (req, res) => {
         const fileUrl = uploadResult.secure_url;
         if (req.file)
             attach = fileUrl;
-        receivers = to.split('-').map(ele => {
-            // console.log(ele)
-            return ele.trim()
-        });
-        // console.log(receivers)
 
-        newCampaign = await Campaign.create(
-            {...campaignRequest, receivers, uniqueId: campaignUniqueId, attach});
 
-        for (let receiver of receivers) {
-            // console.log(`R--${receiver}`);
-            createAudience = await AudienceTarget.create({campaignUniqueId, receiver});
-        }
+        newMessage = await DoctorMessage.create(
+            {...messagenRequest, receiver: req.body.to, uniqueId: messageUniqueId, attach});
+
+        // console.log(`R--${receiver}`);
+        await MessageAudienceTarget.create({messageUniqueId, receiver: req.body.to});
+
         res.status(201).json({
             status: 'success',
-            data: newCampaign
+            data: newMessage
         });
     } catch (err) {
         console.log(err);
@@ -169,28 +165,23 @@ exports.createCampaign = async (req, res) => {
     }
 }
 
-exports.updateCampaignStatus = async (req, res) => {
-    try {
-        const campaignId = req.body.id;
-        if (!campaignId) return res
-            .status(400)
-            .send('You must select campaign for update or enter its ID');
+exports.updateMessageStatus = async (req, res) => {
+    const messageId = req.body.id;
+    if (!messageId) return res
+        .status(400)
+        .send('You must select message for update or enter its ID');
 
-        const newCampaignStatus = req.body.status;
-        if (!newCampaignStatus) return res
-            .status(400)
-            .send('There is no new status to update');
+    const newMessageStatus = req.body.status;
+    if (!newMessageStatus) return res
+        .status(400)
+        .send('There is no new status to update');
 
-        const updatedCampaign = await Campaign
-            .findByIdAndUpdate(campaignId, {status: newCampaignStatus}, {new: true});
-        if (!updatedCampaign) return res.status(400).send('There is no campaign with this ID')
+    const updatedMessage = await DoctorMessage.findByIdAndUpdate(messageId,
+        {status: newMessageStatus}, {new: true});
+    if (!updatedMessage) return res.status(400).send('There is no message with this ID')
 
-        res.status(200).json({
-            campaignTitle: updatedCampaign.subject,
-            newStatus: updatedCampaign.status
-        })
-    } catch (err) {
-        console.log(err);
-        res.status(500).send(err.message);
-    }
+    res.status(200).json({
+        campaignTitle: updatedMessage.subject,
+        newStatus: updatedMessage.status
+    })
 }

@@ -6,11 +6,11 @@ const filterBody = require('../helpers/filterBody')
 
 
 exports.getAllOrganizations = async (req, res) => {
-
-
     try {
+        const {country} = req.query;
         let filter = {};
-        if (req.params.organizationId) filter = {from: req.params.organizationId};
+        filter = country ? {...filter, country} : {};
+
         const allOrganizations = await Organization.find(filter)
             .populate({
                 path: 'country',
@@ -23,6 +23,23 @@ exports.getAllOrganizations = async (req, res) => {
             count: allOrganizations.length,
             data: allOrganizations
         });
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err.message);
+    }
+}
+
+exports.getOrganization = async (req, res) => {
+    try {
+        const id = req.params.organizationId;
+        if (!id) return res.status(400).send('Please select organization or write its ID');
+
+        const organization = await Organization.findById(id).populate({
+            path: 'country',
+            model: "Country",
+            select: " -_id"
+        });
+
     } catch (err) {
         console.log(err);
         res.status(500).send(err.message);
