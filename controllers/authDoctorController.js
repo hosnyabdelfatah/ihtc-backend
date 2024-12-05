@@ -1,11 +1,12 @@
 const jwt = require('jsonwebtoken');
+const {promisify} = require('util');
 const multer = require('multer');
 // const sharp = require('sharp');
 const cloudinary = require('cloudinary').v2
 const {Readable} = require('stream');
 const Doctor = require('../model/doctorModel');
 const bcrypt = require('bcrypt');
-const crypto = require('crypto');
+const {createHash} = require('crypto');
 const Email = require('../utils/email');
 const filterBody = require('../helpers/filterBody');
 const uuid = require('uuid');
@@ -14,13 +15,12 @@ const fs = require("fs");
 const doctorUniqueId = `E-${uuid.v4()}`;
 
 const createToken = (id) => {
-    return jwt.sign(
-        {id: id}, process.env.JWT_SECRET_KEY,
-        {expiresIn: '90d'}, function (err, token) {
-            // console.log(token);
-        }
-    )
+    return jwt.sign({id: id}, process.env.JWT_SECRET_KEY, {
+        expiresIn: process.env.JWT_EXPIRES_IN,
+    })
 }
+
+
 //////////////////////////////////////////////
 const cookieToken = (name, token, req, res) => {
     res.cookie(name, token, {
@@ -225,6 +225,7 @@ exports.doctorLogin = async (req, res) => {
 
 
         if (doctor && rightPassword) {
+
             await doctor.populate([
                 {path: "language", model: "Language", select: "title"},
                 {path: "country", model: "Country", select: "title"},
@@ -234,28 +235,26 @@ exports.doctorLogin = async (req, res) => {
                     select: "title"
                 }
             ]);
-            if (!req.cookies['jwt']) {
+            if (!req.cookies['doctorJwt']) {
                 const token = createToken(doctor._id)
                 cookieToken("doctorJwt", token, req, res);
                 doctor.tokens.push(token);
                 doctor.save();
             }
 
-            const doctorData = {
-                uniqueId: doctorUniqueId,
-                id: doctor._id,
-                firstName: doctor.fname,
-                lastName: doctor.lname,
-                profileImage: doctor.image,
-                country: doctor.country.title,
-                specialty: doctor.specialty.title,
-                language: doctor.language.title,
-                description: doctor.description
-            }
-
             res.status(200).json({
                 status: "success",
-                doctor: doctorData
+                doctor: {
+                    uniqueId: doctorUniqueId,
+                    id: doctor._id,
+                    firstName: doctor.fname,
+                    lastName: doctor.lname,
+                    profileImage: doctor.image,
+                    country: doctor.country.title,
+                    specialty: doctor.specialty.title,
+                    language: doctor.language.title,
+                    description: doctor.description
+                }
             });
         } else {
             return res.status(401).send('Wrong email or password')
@@ -267,8 +266,8 @@ exports.doctorLogin = async (req, res) => {
 //////////////////////////////////////////////
 exports.doctorLogout = async (req, res, next) => {
     try {
-        console.log(req.cookies.jwt)
-        const currentToken = await req.cookies.jwt;
+        console.log(req.cookies.doctorJwt)
+        const currentToken = await req.cookies.doctorJwt;
 
         if (!currentToken) {
             return res.status(401).send('You not logged in please login')
@@ -286,7 +285,7 @@ exports.doctorLogout = async (req, res, next) => {
         currentDoctor.tokens = currentDoctor.tokens.filter(token => token !== currentToken);
         currentDoctor.save();
 
-        await res.cookie('jwt', 'logged out', {
+        await res.cookie('doctorJwt', 'logged out', {
             expires: new Date(Date.now() + 1),
             httpOnly: true,
         });
@@ -300,24 +299,24 @@ exports.doctorLogout = async (req, res, next) => {
 exports.isLoggedIn = async (req, res, next) => {
     try {
         let token;
-        if (
-            req.headers.authorization &&
-            req.headers.authorization.startsWith("Bearer")
-        ) {
-            token = req.headers.authorization.split(" ")[1];
-        } else if (req.cookies.jwt) {
-            token = await req.cookies.jwt;
+        if (req.cookies.doctorJwt) {
+            token = await req.cookies.doctorJwt;
         }
 
         if (!token) {
             return res.status(401).send('You not logged in please login')
         }
-        if (Object.keys(req.cookies).length <= 0) return res.status(401).send('You not logged in please login')
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRETE_KEY)
+        if (Object.keys(req.cookies).length <= 0) return res.status(401).send('You not logged in please login');
+
+        console.log(token);
+
+        const decoded = await promisify(jwt.verify(token, process.env.JWT_SECRET_KEY))
 
         const currentDoctor = await Doctor.findById(decoded.id);
         if (!currentDoctor) return res.status(401).send('This doctor does not longer exists.');
+
+        console.log(currentDoctor);
 
         const isTokenActive = currentDoctor.tokens.find(isToken => isToken === token);
         if (!isTokenActive) return res.status(401).send('You are not logged in, please login');
@@ -335,18 +334,36 @@ exports.isLoggedIn = async (req, res, next) => {
     }
 };
 //////////////////////////////////////////////
+
 exports.forgetPassword = async (req, res) => {
-    const email = req.body.email;
+    console.log(req.body)
+    const {email, url, useAs} = req.body;
     if (!email) return res.status(401).send('Please enter your email!');
 
     const doctor = await Doctor.findOne({email});
     if (!doctor) return res.status(401).send('There is no doctor with this email!')
 
     try {
-        const resetToken = doctor.crateResetToken();
-        await doctor.save({validateBeforeSave: false});
-        res.status(200).send(await resetToken);
+        const resetToken = doctor.createPasswordResetToken();
+        console.log(resetToken);
 
+        await doctor.save({validateBeforeSave: false});
+
+        const resetURL = `${req.protocol}://${req.get(
+            'host'
+        )}/doctors/resetPassword/${resetToken}`;
+        // console.log(resetURL)
+
+        const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.
+                   if you didn't forgot your password please ignore this email!`;
+
+        await new Email(doctor, `${url}/reset-password?useAs=${useAs}&token=${resetToken}`).sendPasswordReset();
+
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Token sent to email!'
+        });
     } catch (err) {
         doctor.passwordResetToken = undefined;
         doctor.passwordResetExpires = undefined;
@@ -356,16 +373,19 @@ exports.forgetPassword = async (req, res) => {
 }
 //////////////////////////////////////////////
 exports.resetPassword = async (req, res) => {
+    console.log(req.body);
+
     try {
-        const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+        const hashedToken = createHash('sha256').update(req.params.token).digest('hex');
+        console.log(hashedToken)
 
         const doctor = await Doctor.findOne({passwordResetToken: hashedToken, passwordResetExpires: {$gt: Date.now()}});
-        // const doctor = await Doctor.findOne({passwordResetToken: hashedToken});
+
         if (!doctor) return res.status(401).send('This url is expired!');
 
-        const {newPassword, confirmNewPassword} = req.body;
-        if (!newPassword || !confirmNewPassword) return res.status(401).send('Please write password  and confirm password !');
-        if (newPassword !== confirmNewPassword) return res.status(401).send('Confirm new password not match new password!');
+        const {newPassword, newPasswordConfirm} = req.body;
+        if (!newPassword || !newPasswordConfirm) return res.status(401).send('Please write password  and confirm password !');
+        if (newPassword !== newPasswordConfirm) return res.status(401).send('Confirm new password not match new password!');
 
         doctor.password = newPassword;
         doctor.passwordResetToken = undefined;
@@ -373,6 +393,7 @@ exports.resetPassword = async (req, res) => {
 
         const token = createToken(doctor.id)
         cookieToken("doctorJwt", token, req, res);
+        console.log(token);
 
         await doctor.save();
         res.status(200).send('Successful reset password');
@@ -383,14 +404,15 @@ exports.resetPassword = async (req, res) => {
 //////////////////////////////////////////////
 exports.updatePassword = async (req, res) => {
     try {
-        const {currentPassword, newPassword, confirmNewPassword} = req.body;
+        console.log(doctor)
+        const {currentPassword, newPassword, newPasswordConfirm} = req.body;
         const doctor = await Doctor.findById(req.doctor.id);
 
-        if (await doctor.comparePassword(currentPassword, v.password)) {
-            if (newPassword !== confirmNewPassword) return res.status(401).send('New password not match confirm  new password!');
+        if (await doctor.correctPassword(currentPassword, doctor.password)) {
+            if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
 
             doctor.password = newPassword;
-            doctor.save({validateBeforeSave: true, new: true});
+            await doctor.save({validateBeforeSave: true, new: true});
 
             const token = createToken(doctor._id);
             cookieToken("doctorJwt", token, req, res);

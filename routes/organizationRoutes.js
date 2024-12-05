@@ -3,6 +3,7 @@ const authOrganizationController = require('../controllers/authOrganizationContr
 const organizationController = require('../controllers/organiztionController');
 const organizationRefreshTokenController = require('../controllers/organizationRefreshTokenController')
 const campaignRouter = require('./campaignRoutes');
+const authDoctorController = require("../controllers/authDoctorController");
 
 const router = express.Router();
 
@@ -17,7 +18,10 @@ router.route('/organization-signup').post(
 );
 
 router.route('/login').post(authOrganizationController.organizationLogin);
-router.route("/refresh").get(organizationRefreshTokenController.handleOrganizationRefreshToken)
+router.route("/refresh").get(organizationRefreshTokenController.handleOrganizationRefreshToken);
+router.route('/forgetPassword').post(authOrganizationController.forgetPassword);
+router.route('/resetPassword/:token').patch(authOrganizationController.resetPassword);
+
 
 router.use(authOrganizationController.isLoggedIn);
 // router.route('/campaigns').get(organizationController.allOrganizationMessages);

@@ -3,7 +3,7 @@ const multer = require("multer");
 const cloudinary = require('cloudinary').v2;
 const {Readable} = require('stream');
 const sharp = require("sharp");
-const crypto = require('crypto');
+const {createHash} = require('crypto');
 const Organization = require("../model/organizationModel");
 const Email = require('../utils/email');
 const filterBody = require('../helpers/filterBody');
@@ -14,12 +14,9 @@ const organizationUniqueId = `E-${uuid.v4()}`;
 
 //////////////////////////////////////////////
 const createToken = (id) => {
-    return jwt.sign(
-        {id: id}, process.env.JWT_SECRET_KEY,
-        {expiresIn: '90d'}, function (err, token) {
-            // console.log(token);
-        }
-    )
+    return jwt.sign({id: id}, process.env.JWT_SECRET_KEY, {
+        expiresIn: process.env.JWT_EXPIRES_IN,
+    })
 }
 //////////////////////////////////////////////
 const cookieToken = (name, token, req, res) => {
@@ -354,16 +351,23 @@ exports.isLoggedIn = async (req, res, next) => {
 };
 //////////////////////////////////////////////
 exports.forgetPassword = async (req, res) => {
-    const email = req.body.email;
+    const {email, url, useAs} = req.body;
     if (!email) return res.status(401).send('Please enter your email!');
 
     const organization = await Organization.findOne({email});
     if (!organization) return res.status(401).send('There is no organization with this email!')
 
     try {
-        const resetToken = organization.crateResetToken();
+        const resetToken = organization.createPasswordResetToken();
+        console.log(resetToken);
         await organization.save({validateBeforeSave: false});
-        res.status(200).send(await resetToken);
+        await new Email(organization, `${url}/reset-password?useAs=${useAs}&token=${resetToken}`).sendPasswordReset();
+
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Token sent to email!'
+        });
 
     } catch (err) {
         organization.passwordResetToken = undefined;
@@ -376,15 +380,15 @@ exports.forgetPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
     try {
-        const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+        const hashedToken = createHash('sha256').update(req.params.token).digest('hex');
 
         // const organization = await Organization.findOne({ passwordResetToken: hashedToken,  passwordResetExpires: { $gt: Date.now() } });
         const organization = await Organization.findOne({passwordResetToken: hashedToken});
         if (!organization) return res.status(401).send('This url is expired!');
 
-        const {newPassword, confirmNewPassword} = req.body;
-        if (!newPassword || !confirmNewPassword) return res.status(401).send('Please write password  and confirm password !');
-        if (newPassword !== confirmNewPassword) return res.status(401).send('Confirm new password not match new password!');
+        const {newPassword, newPasswordConfirm} = req.body;
+        if (!newPassword || !newPasswordConfirm) return res.status(401).send('Please write password  and confirm password !');
+        if (newPassword !== newPasswordConfirm) return res.status(401).send('Confirm new password not match new password!');
 
         organization.password = newPassword;
         organization.passwordResetToken = undefined;

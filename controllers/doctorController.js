@@ -46,41 +46,41 @@ exports.getAllDoctors = async (req, res) => {
     }
 }
 
-exports.getDoctor = async (req, res) => {
-    try {
-        const doctorId = req.params.doctorId;
-        console.log(doctorId)
-        const doctor = await Doctor.findOne({_id: doctorId}).populate([
-            {path: "language", model: "Language", select: "title -_id"},
-            {path: "country", model: "Country", select: "title -_id"},
-            {
-                path: "specialty",
-                model: "DoctorSpecialty",
-                select: "title -_id"
-            }
-        ]);
-
-        if (!doctor) return res.status(400).send('There is no doctor with this unique ID');
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                id: doctor._id,
-                firstName: doctor.fname,
-                lastName: doctor.lname,
-                profileImage: doctor.image,
-                country: doctor.country.title.trim(),
-                specialty: doctor.specialty.title.trim(),
-                language: doctor.language.title.trim(),
-                description: doctor.description
-            }
-        })
-
-    } catch (err) {
-        console.log(err);
-        res.status(500).send(err.message);
-    }
-}
+// exports.getDoctor = async (req, res) => {
+//     try {
+//         const doctorId = req.params.doctorId;
+//         console.log(doctorId)
+//         const doctor = await Doctor.findOne({_id: doctorId}).populate([
+//             {path: "language", model: "Language", select: "title -_id"},
+//             {path: "country", model: "Country", select: "title -_id"},
+//             {
+//                 path: "specialty",
+//                 model: "DoctorSpecialty",
+//                 select: "title -_id"
+//             }
+//         ]);
+//
+//         if (!doctor) return res.status(400).send('There is no doctor with this unique ID');
+//
+//         res.status(200).json({
+//             status: 'success',
+//             data: {
+//                 id: doctor._id,
+//                 firstName: doctor.fname,
+//                 lastName: doctor.lname,
+//                 profileImage: doctor.image,
+//                 country: doctor.country.title.trim(),
+//                 specialty: doctor.specialty.title.trim(),
+//                 language: doctor.language.title.trim(),
+//                 description: doctor.description
+//             }
+//         })
+//
+//     } catch (err) {
+//         console.log(err);
+//         res.status(500).send(err.message);
+//     }
+// }
 
 exports.doctorGetMe = (req, res) => {
     const doctor = req.doctor;

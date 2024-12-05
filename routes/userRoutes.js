@@ -14,7 +14,7 @@ router.route('/user-signup')
         // authUserController.resizeImage,
         authUserController.userSignUp);
 router.route('/login').post(authUserController.userLogin);
-router.route('/forgotPassword').post(authUserController.forgetPassword);
+router.route('/forgetPassword').post(authUserController.forgetPassword);
 router.route('/resetPassword/:token').patch(authUserController.resetPassword);
 
 

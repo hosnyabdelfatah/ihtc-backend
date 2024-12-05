@@ -4,46 +4,47 @@ const {convert} = require('html-to-text');
 const sgMail = require('@sendgrid/mail');
 
 module.exports = class Email {
-    constructor(user, url) {
+    constructor(user, url, message) {
         this.to = user.email;
-        this.firstName = user.fname;
+        this.firstName = user.fname + " " + user.lname;
         this.url = url;
         this.from = process.env.EMAIL_FROM;
+        this.message = message;
     }
 
     newTransport() {
-        // if (process.env.NODE_ENV === 'production') {
-        //     //     // Sendgrid
-        //     sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-        //     return nodemailer.createTransport({
-        //         service: 'SendGrid',
-        //         ignoreTLS: true,
-        //         auth: {
-        //             user: process.env.SENDGRID_USERNAME,
-        //             pass: process.env.SENDGRID_PASSWORD
-        //         }
-        //     });
-        // }
+        if (process.env.NODE_ENV === 'production') {
+            //     // Sendgrid
+            sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+            return nodemailer.createTransport({
+                service: 'SendGrid',
+                ignoreTLS: true,
+                auth: {
+                    user: process.env.SENDGRID_USERNAME,
+                    pass: process.env.SENDGRID_PASSWORD
+                }
+            });
+        }
 
-        sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-        return nodemailer.createTransport({
-            service: 'SendGrid',
-            ignoreTLS: true,
-            auth: {
-                user: process.env.SENDGRID_USERNAME,
-                pass: process.env.SENDGRID_PASSWORD
-            }
-        });
-
+        // sgMail.setApiKey(process.env.SENDGRID_API_KEY)
         // return nodemailer.createTransport({
-        //     host: process.env.EMAIL_HOST,
-        //     port: process.env.EMAIL_PORT,
+        //     service: 'SendGrid',
         //     ignoreTLS: true,
         //     auth: {
-        //         user: process.env.EMAIL_USERNAME,
-        //         pass: process.env.EMAIL_PASSWORD
+        //         user: process.env.SENDGRID_USERNAME,
+        //         pass: process.env.SENDGRID_PASSWORD
         //     }
         // });
+
+        return nodemailer.createTransport({
+            host: process.env.EMAIL_HOST,
+            port: process.env.EMAIL_PORT,
+            ignoreTLS: true,
+            auth: {
+                user: process.env.EMAIL_USERNAME,
+                pass: process.env.EMAIL_PASSWORD
+            }
+        });
     }
 
     // Send the actual email

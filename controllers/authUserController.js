@@ -1,3 +1,4 @@
+const {createHash} = require('crypto');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const sharp = require('sharp');
@@ -11,13 +12,9 @@ const {Readable} = require('stream');
 const userUniqueId = `E-${uuid.v4()}`;
 
 const createToken = (id) => {
-    return jwt.sign(
-        {id: id}, process.env.JWT_SECRET_KEY,
-        {expiresIn: '90d'}, function (err, token) {
-            // console.log(`The TOKEN is :${token}`);
-            if (err) console.log(err)
-        }
-    )
+    return jwt.sign({id: id}, process.env.JWT_SECRET_KEY, {
+        expiresIn: process.env.JWT_EXPIRES_IN,
+    })
 }
 //////////////////////////////////////////////
 const cookieToken = (name, token, req, res) => {
@@ -354,16 +351,24 @@ exports.isLoggedIn = async (req, res, next) => {
 };
 //////////////////////////////////////////////
 exports.forgetPassword = async (req, res) => {
-    const email = req.body.email;
+    const {email, url, useAs} = req.body;
+
     if (!email) return res.status(401).send('Please enter your email!');
 
     const user = await User.findOne({email});
     if (!user) return res.status(401).send('There is no user with this email!')
 
     try {
-        const resetToken = user.crateResetToken();
+        const resetToken = user.createPasswordResetToken()
+        console.log(`Reset token is: ${resetToken}`);
         await user.save({validateBeforeSave: false});
-        res.status(200).send(await resetToken);
+
+        await new Email(user, `${url}/reset-password?useAs=${useAs}&token=${resetToken}`).sendPasswordReset();
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Token sent to email!'
+        });
 
     } catch (err) {
         user.passwordResetToken = undefined;
@@ -375,15 +380,15 @@ exports.forgetPassword = async (req, res) => {
 //////////////////////////////////////////////
 exports.resetPassword = async (req, res) => {
     try {
-        const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+        const hashedToken = createHash('sha256').update(req.params.token).digest('hex');
 
         const user = await User.findOne({passwordResetToken: hashedToken, passwordResetExpires: {$gt: Date.now()}});
         // const user = await User.findOne({passwordResetToken: hashedToken});
         if (!user) return res.status(401).send('This url is expired!');
 
-        const {newPassword, confirmNewPassword} = req.body;
-        if (!newPassword || !confirmNewPassword) return res.status(401).send('Please write password  and confirm password !');
-        if (newPassword !== confirmNewPassword) return res.status(401).send('Confirm new password not match new password!');
+        const {newPassword, newPasswordConfirm} = req.body;
+        if (!newPassword || !newPasswordConfirm) return res.status(401).send('Please write password  and confirm password !');
+        if (newPassword !== newPasswordConfirm) return res.status(401).send('Confirm new password not match new password!');
 
         user.password = newPassword;
         user.passwordResetToken = undefined;
@@ -401,11 +406,11 @@ exports.resetPassword = async (req, res) => {
 //////////////////////////////////////////////
 exports.updatePassword = async (req, res) => {
     try {
-        const {currentPassword, newPassword, confirmNewPassword} = req.body;
+        const {currentPassword, newPassword, newPasswordConfirm} = req.body;
         const user = await User.findById(req.user.id);
 
-        if (await user.comparePassword(currentPassword, v.password)) {
-            if (newPassword !== confirmNewPassword) return res.status(401).send('New password not match confirm  new password!');
+        if (await user.comparePasswords(currentPassword, v.password)) {
+            if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
 
             user.password = newPassword;
             user.save({validateBeforeSave: true, new: true});
