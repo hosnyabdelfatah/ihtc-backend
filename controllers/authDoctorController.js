@@ -155,8 +155,11 @@ exports.doctorSignUp = async (req, res) => {
             uniqueId: `D-${doctorUniqueId}`
         });
 
-        const token = createToken(newDoctor._id);
-        console.log(`TOKEN IS: ${token}`)
+        // const token = createToken(newDoctor._id);
+        const token = jwt.sign({id: newDoctor._id}, process.env.JWT_SECRET_KEY, {
+            expiresIn: process.env.JWT_EXPIRES_IN,
+        })
+        // console.log(`TOKEN IS: ${token}`)
         newDoctor.tokens.push(token);
         newDoctor.save();
 
@@ -205,8 +208,7 @@ exports.doctorLogin = async (req, res) => {
 
     const {user, password} = req.body;
     if (!user || !password) return res.status(400).send('Please enter your user  and password');
-    // console.log(req.cookies['jwt']);
-
+    console.log(`DoctorJWT is: ${req.cookies['doctorJwt']}`);
     // console.log(`USER  IS:  ${req.body.user}`)
     // console.log(`USER PASSWORD IS:  ${req.body.password}`)
 
@@ -225,7 +227,6 @@ exports.doctorLogin = async (req, res) => {
 
 
         if (doctor && rightPassword) {
-
             await doctor.populate([
                 {path: "language", model: "Language", select: "title"},
                 {path: "country", model: "Country", select: "title"},
@@ -235,12 +236,23 @@ exports.doctorLogin = async (req, res) => {
                     select: "title"
                 }
             ]);
+            console.log(`Toke before !: ${req.cookies?.doctorJwt}`)
             if (!req.cookies['doctorJwt']) {
-                const token = createToken(doctor._id)
-                cookieToken("doctorJwt", token, req, res);
+                const token = jwt.sign({id: doctor.id}, process.env.JWT_SECRET_KEY, {
+                    expiresIn: process.env.JWT_EXPIRES_IN,
+                })
+
+                // cookieToken("doctorJwt", token, req, res);
+                res.cookie("doctorJwt", token, {
+                    expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+                    maxAge: 90 * 24 * 60 * 60 * 1000,
+                    secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
+                    httpOnly: true
+                });
                 doctor.tokens.push(token);
-                doctor.save();
+                await doctor.save();
             }
+
 
             res.status(200).json({
                 status: "success",
@@ -296,44 +308,6 @@ exports.doctorLogout = async (req, res, next) => {
     }
 }
 
-exports.isLoggedIn = async (req, res, next) => {
-    try {
-        let token;
-        if (req.cookies.doctorJwt) {
-            token = await req.cookies.doctorJwt;
-        }
-
-        if (!token) {
-            return res.status(401).send('You not logged in please login')
-        }
-
-        if (Object.keys(req.cookies).length <= 0) return res.status(401).send('You not logged in please login');
-
-        console.log(token);
-
-        const decoded = await promisify(jwt.verify(token, process.env.JWT_SECRET_KEY))
-
-        const currentDoctor = await Doctor.findById(decoded.id);
-        if (!currentDoctor) return res.status(401).send('This doctor does not longer exists.');
-
-        console.log(currentDoctor);
-
-        const isTokenActive = currentDoctor.tokens.find(isToken => isToken === token);
-        if (!isTokenActive) return res.status(401).send('You are not logged in, please login');
-
-
-        if (currentDoctor.changedPasswordAfter(decoded.iat)) {
-            return res.status(401).send('Doctor recently changed password! Please log in again.');
-        }
-
-        req.doctor = currentDoctor;
-        res.locals.doctor = currentDoctor;
-        next();
-    } catch (err) {
-        res.send(err.message);
-    }
-};
-//////////////////////////////////////////////
 
 exports.forgetPassword = async (req, res) => {
     console.log(req.body)
@@ -391,7 +365,10 @@ exports.resetPassword = async (req, res) => {
         doctor.passwordResetToken = undefined;
         doctor.passwordResetExpires = undefined;
 
-        const token = createToken(doctor.id)
+        // createToken(doctor.id)
+        const token = jwt.sign({id: doctor.id}, process.env.JWT_SECRET_KEY, {
+            expiresIn: process.env.JWT_EXPIRES_IN,
+        })
         cookieToken("doctorJwt", token, req, res);
         console.log(token);
 
@@ -402,9 +379,59 @@ exports.resetPassword = async (req, res) => {
     }
 }
 //////////////////////////////////////////////
+
+exports.isLoggedIn = async (req, res, next) => {
+    try {
+        console.log(req.cookies);
+        let token;
+        if (Object.keys(req.cookies).length <= 0) return res.status(401).send('You not logged in please login');
+
+        if (await req.cookies["doctorJwt"]) {
+            token = await req.cookies["doctorJwt"];
+            console.log(`LoggedIn token is: ${token}`)
+        }
+        console.log(`TOkot: ${token}`)
+        if (!token) {
+            return res.status(401).send('You not logged in please login')
+        }
+
+        // const decoded = await promisify(jwt.verify(token, process.env.JWT_SECRET_KEY));
+        let id;
+        let iat;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY, function (err, decoded) {
+            // console.log(`Decoded from isLoggedIn: `, decoded);
+            id = decoded.id;
+            iat = decoded.iat
+            if (err) console.log(err)
+        });
+
+        console.log(`Decoded from isLoggedIn: `, id)
+
+        const currentDoctor = await Doctor.findById(id);
+        if (!currentDoctor) return res.status(401).send('This doctor does not longer exists.');
+
+        console.log(currentDoctor);
+
+        const isTokenActive = currentDoctor.tokens.find(isToken => isToken === token);
+        console.log(isTokenActive);
+        if (!isTokenActive) return res.status(401).send('You are not logged in, please login');
+
+
+        if (currentDoctor.changedPasswordAfter(iat)) {
+            return res.status(401).send('Doctor recently changed password! Please log in again.');
+        }
+
+        req.doctor = currentDoctor;
+        res.locals.doctor = currentDoctor;
+        next();
+    } catch (err) {
+        res.send(err.message);
+    }
+};
+//////////////////////////////////////////////
 exports.updatePassword = async (req, res) => {
     try {
-        console.log(doctor)
+        console.log(req.doctor)
         const {currentPassword, newPassword, newPasswordConfirm} = req.body;
         const doctor = await Doctor.findById(req.doctor.id);
 
@@ -414,8 +441,14 @@ exports.updatePassword = async (req, res) => {
             doctor.password = newPassword;
             await doctor.save({validateBeforeSave: true, new: true});
 
-            const token = createToken(doctor._id);
+            const token = jwt.sign({id: doctor.id}, process.env.JWT_SECRET_KEY, {
+                expiresIn: process.env.JWT_EXPIRES_IN,
+            });
+            console.log(token)
             cookieToken("doctorJwt", token, req, res);
+
+            doctor.tokens.push(token);
+            await doctor.save();
 
             res.status(200).json({
                 message: 'Password update successful'

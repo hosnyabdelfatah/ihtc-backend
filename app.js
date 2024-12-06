@@ -48,7 +48,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Handle preflight requests globally
-app.options('*', cors(corsOptions));
+// app.options('*', cors(corsOptions));
 
 // Referrer Policy Middleware (optional)
 app.use((req, res, next) => {

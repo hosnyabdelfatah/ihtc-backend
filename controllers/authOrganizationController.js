@@ -21,7 +21,8 @@ const createToken = (id) => {
 //////////////////////////////////////////////
 const cookieToken = (name, token, req, res) => {
     res.cookie(name, token, {
-        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+        expires: new Date(
+            Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
         maxAge: 90 * 24 * 60 * 60 * 1000,
         secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
         httpOnly: true
@@ -244,8 +245,7 @@ exports.organizationLogin = async (req, res) => {
                     expiresIn: process.env.JWT_EXPIRES_IN,
                 });
 
-                organization.tokens.push(token);
-                organization.save();
+
                 cookieToken("organizationJwt", token, req, res);
                 // console.log(token)
                 organization.tokens.push(token);
