@@ -156,9 +156,9 @@ exports.doctorSignUp = async (req, res) => {
             uniqueId: `D-${doctorUniqueId}`
         });
 
-        const token = jwt.sign({id: newDoctor._id}, process.env.JWT_SECRET_KEY, {
-            expiresIn: process.env.JWT_EXPIRES_IN,
-        })
+        const token = jwt.sign({id: newDoctor._id}, process.env.JWT_SECRET_KEY,
+            {expiresIn: process.env.JWT_EXPIRES_IN,}
+        );
 
         newDoctor.tokens.push(token);
         newDoctor.save();
