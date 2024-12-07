@@ -237,6 +237,7 @@ exports.doctorLogin = async (req, res) => {
                 const token = jwt.sign({id: doctor.id}, process.env.JWT_SECRET_KEY, {
                     expiresIn: process.env.JWT_EXPIRES_IN,
                 })
+                console.log("JWT_EXPIRES_IN:", process.env.JWT_EXPIRES_IN);
                 cookieToken("doctorJwt", token, req, res);
 
                 doctor.tokens.push(token);
