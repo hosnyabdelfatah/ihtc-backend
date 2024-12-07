@@ -27,8 +27,8 @@ const cookieToken = (name, token, req, res) => {
         secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
         httpOnly: true,
         // secure: false,
-        SameSite: "none",
-        path: "/"
+        // SameSite: "none",
+        // path: "/"
     });
 }
 
