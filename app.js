@@ -41,7 +41,7 @@ const corsOptions = {
     },
     credentials: true, // Allow credentials like cookies
     optionsSuccessStatus: 200, // For legacy browsers
-    allowedHeaders: 'Content-Type,Authorization', // Allowed headers
+    allowedHeaders: 'Content-Type,Authorization,Cookie', // Allowed headers
 };
 
 // Apply CORS middleware globally

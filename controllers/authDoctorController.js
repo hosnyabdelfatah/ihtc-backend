@@ -26,7 +26,9 @@ const cookieToken = (name, token, req, res) => {
         maxAge: 90 * 24 * 60 * 60 * 1000,
         secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
         httpOnly: true,
-        sameSite: 'None',
+        // secure: false,
+        SameSite: "none",
+        path: "/"
     });
 }
 
@@ -142,9 +144,9 @@ exports.doctorSignUp = async (req, res) => {
         } else {
             image = `https://res.cloudinary.com/dq8h1tfis/image/upload/v1732632603/ihtc/mte8snmyiarpvfhofp6k.jpg`;
         }
-        console.log(image)
+
         const doctorRequest = filterBody(req.body, ...doctorInfo);
-        // console.log(doctorRequest)
+
         const isExistsDoctor = await Doctor.findOne({email})
 
         if (isExistsDoctor) return res.status(400).send(`Doctor with Email ${email} is already exists! `)
@@ -154,11 +156,10 @@ exports.doctorSignUp = async (req, res) => {
             uniqueId: `D-${doctorUniqueId}`
         });
 
-        // const token = createToken(newDoctor._id);
         const token = jwt.sign({id: newDoctor._id}, process.env.JWT_SECRET_KEY, {
             expiresIn: process.env.JWT_EXPIRES_IN,
         })
-        // console.log(`TOKEN IS: ${token}`)
+
         newDoctor.tokens.push(token);
         newDoctor.save();
 
@@ -207,13 +208,8 @@ exports.doctorLogin = async (req, res) => {
 
     const {user, password} = req.body;
     if (!user || !password) return res.status(400).send('Please enter your user  and password');
-    console.log(`DoctorJWT is: ${req.cookies['doctorJwt']}`);
-    // console.log(`USER  IS:  ${req.body.user}`)
-    // console.log(`USER PASSWORD IS:  ${req.body.password}`)
 
     try {
-        console.log('Incoming Cookies:', req.cookies);
-
         let doctor
         if (user.startsWith('D-'))
             doctor = await Doctor.findOne({uniqueId: user.trim(0)}).exec();
@@ -242,12 +238,11 @@ exports.doctorLogin = async (req, res) => {
                     expiresIn: process.env.JWT_EXPIRES_IN,
                 })
                 cookieToken("doctorJwt", token, req, res);
-                console.log(`token:: ${token}`)
+
                 doctor.tokens.push(token);
                 await doctor.save();
             }
             const cookieJWT = await req.cookies['doctorJwt']
-            console.log(cookieJWT)
 
             res.status(200).json({
                 status: "success",
@@ -305,7 +300,7 @@ exports.doctorLogout = async (req, res, next) => {
 
 
 exports.forgetPassword = async (req, res) => {
-    console.log(req.body)
+
     const {email, url, useAs} = req.body;
     if (!email) return res.status(401).send('Please enter your email!');
 
@@ -314,14 +309,12 @@ exports.forgetPassword = async (req, res) => {
 
     try {
         const resetToken = doctor.createPasswordResetToken();
-        console.log(resetToken);
 
         await doctor.save({validateBeforeSave: false});
 
         const resetURL = `${req.protocol}://${req.get(
             'host'
         )}/doctors/resetPassword/${resetToken}`;
-        // console.log(resetURL)
 
         const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.
                    if you didn't forgot your password please ignore this email!`;
@@ -342,11 +335,9 @@ exports.forgetPassword = async (req, res) => {
 }
 //////////////////////////////////////////////
 exports.resetPassword = async (req, res) => {
-    console.log(req.body);
 
     try {
         const hashedToken = createHash('sha256').update(req.params.token).digest('hex');
-        console.log(hashedToken)
 
         const doctor = await Doctor.findOne({passwordResetToken: hashedToken, passwordResetExpires: {$gt: Date.now()}});
 
@@ -365,7 +356,6 @@ exports.resetPassword = async (req, res) => {
             expiresIn: process.env.JWT_EXPIRES_IN,
         })
         cookieToken("doctorJwt", token, req, res);
-        console.log(token);
 
         await doctor.save();
         res.status(200).send('Successful reset password');
@@ -376,16 +366,17 @@ exports.resetPassword = async (req, res) => {
 //////////////////////////////////////////////
 
 exports.isLoggedIn = async (req, res, next) => {
+    // console.log('DEBUG HEADERS: ', res.getHeaders());
     try {
-        console.log(req.cookies);
+
         let token;
         if (Object.keys(req.cookies).length <= 0) return res.status(401).send('You not logged in please login');
 
         if (await req.cookies["doctorJwt"]) {
             token = await req.cookies["doctorJwt"];
-            console.log(`LoggedIn token is: ${token}`)
+
         }
-        console.log(`TOkot: ${token}`)
+
         if (!token) {
             return res.status(401).send('You not logged in please login')
         }
@@ -394,21 +385,19 @@ exports.isLoggedIn = async (req, res, next) => {
         let id;
         let iat;
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY, function (err, decoded) {
-            // console.log(`Decoded from isLoggedIn: `, decoded);
+
             id = decoded.id;
             iat = decoded.iat
             if (err) console.log(err)
         });
 
-        console.log(`Decoded from isLoggedIn: `, id)
 
         const currentDoctor = await Doctor.findById(id);
         if (!currentDoctor) return res.status(401).send('This doctor does not longer exists.');
 
-        console.log(currentDoctor);
 
         const isTokenActive = currentDoctor.tokens.find(isToken => isToken === token);
-        console.log(isTokenActive);
+
         if (!isTokenActive) return res.status(401).send('You are not logged in, please login');
 
 
@@ -426,7 +415,7 @@ exports.isLoggedIn = async (req, res, next) => {
 //////////////////////////////////////////////
 exports.updatePassword = async (req, res) => {
     try {
-        console.log(req.doctor)
+
         const {currentPassword, newPassword, newPasswordConfirm} = req.body;
         const doctor = await Doctor.findById(req.doctor.id);
 
@@ -439,7 +428,7 @@ exports.updatePassword = async (req, res) => {
             const token = jwt.sign({id: doctor.id}, process.env.JWT_SECRET_KEY, {
                 expiresIn: process.env.JWT_EXPIRES_IN,
             });
-            console.log(token)
+
             cookieToken("doctorJwt", token, req, res);
 
             doctor.tokens.push(token);
