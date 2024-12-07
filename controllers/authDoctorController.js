@@ -27,8 +27,8 @@ const cookieToken = (name, token, req, res) => {
         secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
         httpOnly: true,
         // secure: false,
-        // SameSite: "none",
-        // path: "/"
+        SameSite: "none",
+        path: "/"
     });
 }
 
@@ -367,7 +367,7 @@ exports.resetPassword = async (req, res) => {
 //////////////////////////////////////////////
 
 exports.isLoggedIn = async (req, res, next) => {
-    // console.log('DEBUG HEADERS: ', res.getHeaders());
+    console.log('DEBUG HEADERS: ', res.getHeaders());
     try {
 
         let token;
