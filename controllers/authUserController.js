@@ -259,6 +259,7 @@ exports.userLogin = async (req, res) => {
 
 
             const userData = {
+                id: user?._id,
                 firstName: user?.fname,
                 lastName: user?.lname,
                 profileImage: user?.avatar,
@@ -406,14 +407,14 @@ exports.resetPassword = async (req, res) => {
 //////////////////////////////////////////////
 exports.updatePassword = async (req, res) => {
     try {
-        const {currentPassword, newPassword, newPasswordConfirm} = req.body;
-        const user = await User.findById(req.user.id);
+        const {id, currentPassword, newPassword, newPasswordConfirm} = req.body;
+        const user = await User.findById(id);
 
-        if (await user.comparePasswords(currentPassword, v.password)) {
+        if (await user.comparePasswords(currentPassword, user.password)) {
             if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
 
             user.password = newPassword;
-            user.save({validateBeforeSave: true, new: true});
+            await user.save({validateBeforeSave: true, new: true});
 
             const token = createToken(user._id);
             cookieToken("userJwt", token, req, res);
@@ -422,8 +423,6 @@ exports.updatePassword = async (req, res) => {
                 message: 'Password update successful'
             });
         }
-
-
     } catch (err) {
         console.log(err)
         return res.status(500).send(err.message)

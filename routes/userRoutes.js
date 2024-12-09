@@ -16,6 +16,7 @@ router.route('/user-signup')
 router.route('/login').post(authUserController.userLogin);
 router.route('/forgetPassword').post(authUserController.forgetPassword);
 router.route('/resetPassword/:token').patch(authUserController.resetPassword);
+router.route('/updatePassword').patch(authUserController.updatePassword);
 
 
 router.use(authUserController.isLoggedIn)

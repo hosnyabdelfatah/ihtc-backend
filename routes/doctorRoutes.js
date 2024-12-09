@@ -18,11 +18,11 @@ router.route('/forgetPassword').post(authDoctorController.forgetPassword);
 
 router.route('/resetPassword/:token').patch(authDoctorController.resetPassword);
 
-// router.route('/:doctorId').get(doctorController.getDoctor);
+router.route('/:doctorId').get(doctorController.getDoctor);
+router.route('/updatePassword').patch(authDoctorController.updatePassword);
 
 
 router.use(authDoctorController.isLoggedIn)
-router.route('/updatePassword').patch(authDoctorController.updatePassword);
 router.route('/logout').get(authDoctorController.doctorLogout);
 // router.route('/me').get(doctorController.doctorGetMe);
 router.route('/deleteMe').post(doctorController.doctorDeleteMe);

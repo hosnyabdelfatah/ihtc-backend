@@ -417,16 +417,18 @@ exports.isLoggedIn = async (req, res, next) => {
 exports.updatePassword = async (req, res) => {
     try {
 
-        const {currentPassword, newPassword, newPasswordConfirm} = req.body;
-        const doctor = await Doctor.findById(req.doctor.id);
+
+        const {id, currentPassword, newPassword, newPasswordConfirm} = req.body;
+        const doctor = await Doctor.findById(id);
 
         if (await doctor.correctPassword(currentPassword, doctor.password)) {
-            if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
+
+            if (newPassword.trim() !== newPasswordConfirm.trim()) return res.status(401).send('New password not match  new password  confirm!');
 
             doctor.password = newPassword;
             await doctor.save({validateBeforeSave: true, new: true});
 
-            const token = jwt.sign({id: doctor.id}, process.env.JWT_SECRET_KEY, {
+            const token = jwt.sign({id: doctorId}, process.env.JWT_SECRET_KEY, {
                 expiresIn: process.env.JWT_EXPIRES_IN,
             });
 

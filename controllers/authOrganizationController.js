@@ -25,7 +25,9 @@ const cookieToken = (name, token, req, res) => {
             Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
         maxAge: 90 * 24 * 60 * 60 * 1000,
         secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
-        httpOnly: true
+        httpOnly: true,
+        sameSite: "none",
+        path: "/"
     });
 }
 //////////////////////////////////////////////
@@ -264,6 +266,7 @@ exports.organizationLogin = async (req, res) => {
             // console.log(banner)
             res.json({
                 organization: {
+                    id: _id,
                     name,
                     logo,
                     banner,
@@ -408,14 +411,15 @@ exports.resetPassword = async (req, res) => {
 
 exports.updatePassword = async (req, res) => {
     try {
-        const {currentPassword, newPassword, confirmNewPassword} = req.body;
-        const organization = await Organization.findById(req.organization.id);
+        const {id, currentPassword, newPassword, newPasswordConfirm} = req.body;
+        const organization = await Organization.findById(id);
 
-        if (await organization.comparePassword(currentPassword, organization.password)) {
-            if (newPassword !== confirmNewPassword) return res.status(401).send('New password not match confirm  new password!');
+
+        if (await organization.correctPassword(currentPassword, organization.password)) {
+            if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
 
             organization.password = newPassword;
-            organization.save({validateBeforeSave: true, new: true});
+            await organization.save({validateBeforeSave: true, new: true});
 
             const token = createToken(organization._id);
             cookieToken("organizationJwt", token, req, res);
