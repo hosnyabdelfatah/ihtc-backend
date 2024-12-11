@@ -83,12 +83,15 @@ exports.uploadCampaignMedia = upload.single('attach');
 exports.getAllCampaigns = async (req, res) => {
     try {
         let filter = {};
+        console.log(req.params)
         const organizationId = req.params.organizationId
         console.log(organizationId)
         if (organizationId) filter = {from: organizationId}
 
         const allCampaigns = await Campaign.find(filter)
-            .populate({path: 'organization', model: 'Organization'});
+            .populate([
+                {path: 'from', model: 'Organization', select: 'name'},
+                {path: 'receivers', model: 'Doctor', select: 'fname lname'}]);
         res.status(200).json({
             status: 'success',
             count: allCampaigns.length,
@@ -107,7 +110,10 @@ exports.getOneCampaign = async (req, res) => {
         if (!id) return res.status(400).send('Campaign Id is require');
 
         const campaign = await Campaign.findById(id)
-            .populate({path: 'organization', model: 'Organization'});
+            .populate([
+                {path: 'from', model: 'Organization'},
+                {path: 'receivers', model: 'Doctor', select: 'fname lname'}
+            ]);
         if (!campaign) return res.status(404).send('There is no campaign with this ID!');
 
         res.status(200).json({
@@ -129,6 +135,7 @@ exports.createCampaign = async (req, res) => {
         let receivers;
         let attach;
         let {subject, from, to, status} = req.body;
+        console.log(req.body)
 
 
         const keys = ["subject", "from", "to", "status", "campaignText"];

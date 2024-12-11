@@ -409,7 +409,7 @@ exports.updatePassword = async (req, res) => {
     try {
         const {id, currentPassword, newPassword, newPasswordConfirm} = req.body;
         const user = await User.findById(id);
-
+ 
         if (await user.comparePasswords(currentPassword, user.password)) {
             if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
 

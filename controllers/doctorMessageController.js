@@ -88,7 +88,10 @@ exports.getAllDoctorMessagesOut = async (req, res) => {
 
 
         const allDoctorMessageOut = await DoctorMessage.find({from: doctorId})
-            .populate({path: 'from', model: 'Doctor'});
+            .populate([
+                {path: 'from', model: 'Doctor'},
+                {path: 'receiver', model: 'Organization', select: "name"}
+            ]);
 
         res.status(200).json({
             status: 'success',
@@ -104,10 +107,16 @@ exports.getAllDoctorMessagesOut = async (req, res) => {
 exports.getOneMessage = async (req, res) => {
     try {
         const id = req.params.messageId;
+        console.log(id)
         if (!id) return res.status(400).send('Message ID is required select message or enter its ID!');
 
         const message = await DoctorMessage.findById(id)
-            .populate({path: 'organization', model: 'Organization'});
+            .populate(
+                [
+                    {path: 'from', model: 'Doctor', select: 'fname lname'},
+                    {path: 'receiver', model: 'Organization', select: 'name'}
+                ]
+            );
 
         if (!message) return res.status(404).send('There is no message with this ID!');
 

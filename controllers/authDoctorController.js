@@ -456,3 +456,7 @@ exports.agreeRole = (...roles) => {
         next();
     }
 }
+
+exports.updateProfileImage = async (req, res) => {
+//    :TODO Create update profile image
+}
