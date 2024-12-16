@@ -260,8 +260,8 @@ exports.userLogin = async (req, res) => {
                 // await cookieToken("userJwt", token, req, res);
                 res.cookie("userJwt", token, {
                     maxAge: 90 * 24 * 60 * 60 * 1000,
-                    secure: true,
-                    httpOnly: true,
+                    // secure: true,
+                    // httpOnly: true,
                     sameSite: "none",
                     path: "/"
                 });
