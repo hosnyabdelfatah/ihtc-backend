@@ -262,7 +262,8 @@ exports.userLogin = async (req, res) => {
                     maxAge: 90 * 24 * 60 * 60 * 1000,
                     secure: true,
                     httpOnly: true,
-                    sameSite: "none"
+                    sameSite: "none",
+                    path: "/"
                 });
 
                 console.log(req.cookies["userJwt"])
