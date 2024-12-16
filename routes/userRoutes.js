@@ -1,6 +1,7 @@
 const express = require('express');
 const authUserController = require('../controllers/authUserController');
 const userController = require('../controllers/userController');
+const refreshUserController = require('../controllers/userRefreshTokenController');
 const messageRoutes = require('./campaignRoutes');
 
 const router = express.Router();
@@ -17,6 +18,7 @@ router.route('/login').post(authUserController.userLogin);
 router.route('/forgetPassword').post(authUserController.forgetPassword);
 router.route('/resetPassword/:token').patch(authUserController.resetPassword);
 router.route('/updatePassword').patch(authUserController.updatePassword);
+router.route("/userRefresh").get(refreshUserController.handleUserRefreshToken)
 
 
 router.use(authUserController.isLoggedIn)

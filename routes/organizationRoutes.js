@@ -18,7 +18,7 @@ router.route('/organization-signup').post(
 );
 
 router.route('/login').post(authOrganizationController.organizationLogin);
-router.route("/refresh").get(organizationRefreshTokenController.handleOrganizationRefreshToken);
+router.route("/organizationRefresh").get(organizationRefreshTokenController.handleOrganizationRefreshToken);
 router.route('/forgetPassword').post(authOrganizationController.forgetPassword);
 router.route('/resetPassword/:token').patch(authOrganizationController.resetPassword);
 router.route('/updatePassword').patch(authOrganizationController.updatePassword)

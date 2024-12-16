@@ -1,6 +1,7 @@
 const express = require('express');
 const authDoctorController = require('../controllers/authDoctorController');
 const doctorController = require('../controllers/doctorController');
+const refreshDoctor = require('../controllers/doctorRefreshTokenController');
 const messageRoutes = require('./campaignRoutes');
 
 const router = express.Router();
@@ -15,9 +16,8 @@ router.route('/doctor-signup')
         authDoctorController.doctorSignUp);
 router.route('/login').post(authDoctorController.doctorLogin);
 router.route('/forgetPassword').post(authDoctorController.forgetPassword);
-
 router.route('/resetPassword/:token').patch(authDoctorController.resetPassword);
-
+router.route("/doctorRefresh").get(refreshDoctor.handleDoctorRefreshToken);
 router.route('/:doctorId').get(doctorController.getDoctor);
 router.route('/updatePassword').patch(authDoctorController.updatePassword);
 

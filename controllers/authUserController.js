@@ -22,7 +22,8 @@ const cookieToken = (name, token, req, res) => {
         expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
         maxAge: 90 * 24 * 60 * 60 * 1000,
         secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
-        httpOnly: true
+        httpOnly: true,
+        SameSite: "none"
     });
 }
 
@@ -163,7 +164,7 @@ exports.userSignUp = async (req, res) => {
             {path: "country", model: "Country", select: "title"},
             {
                 path: "specialty",
-                model: "DoctorSpecialty",
+                model: "UserSpecialty",
                 select: "title"
             }
         ]);
@@ -233,30 +234,42 @@ exports.userLogin = async (req, res) => {
 
         if (!email || !password) return res.status(400).send('Please enter your user  and password');
 
-        const user = await User.findOne({email}).populate([
-            {path: "language", model: "Language"},
-            {path: "country", model: "Country"},
-            {path: "specialty", model: "DoctorSpecialty"}
-        ]);
+        const user = await User.findOne({email})
 
         if (!user) return res.status(404).send('There is no user with this email!');
 
-        console.log(user)
-        console.log(password, user.password)
+
+        // console.log(password, user.password)
         const rightPassword = await user.comparePasswords(password, user?.password)
         if (!rightPassword) return res.status(400).send('Email or password not correct');
 
+        let token;
         if (user && rightPassword) {
-            if (!req.cookies['jwt']) {
-                const token = jwt.sign({id: user._id}, process.env.JWT_SECRET_KEY, {
-                    expiresIn: '90d',
-                });
+            await user.populate([
+                {path: "language", model: "Language"},
+                {path: "country", model: "Country"},
+                {path: "specialty", model: "DoctorSpecialty"}
+            ]);
 
-                cookieToken("userJwt", token, req, res);
+            if (!req.cookies['userJwt']) {
+                // console.log('No userJwtCookie')
+                token = jwt.sign({id: user.id}, process.env.JWT_SECRET_KEY, {
+                    expiresIn: process.env.JWT_EXPIRES_IN,
+                })
+
+                await cookieToken("userJwt", token, req, res);
+
+                console.log(req.cookies["userJwt"])
                 user.tokens.push(token);
-                user.save();
+                await user.save();
+            } else {
+                token = req.cookies['userJwt'];
+                const tokenIsExists = user.tokens.indexOf(token)
+                if (tokenIsExists === -1) {
+                    user.tokens.push(token);
+                    await user.save();
+                }
             }
-
 
             const userData = {
                 id: user?._id,
@@ -271,7 +284,7 @@ exports.userLogin = async (req, res) => {
 
             res.status(200).json({
                 status: "success",
-                user: userData
+                data: userData
             });
         } else {
             return res.status(401).send('Wrong email or password')
@@ -281,6 +294,7 @@ exports.userLogin = async (req, res) => {
     }
 }
 //////////////////////////////////////////////
+
 exports.userLogout = async (req, res, next) => {
     try {
         console.log(req.cookies.jwt)
@@ -409,7 +423,7 @@ exports.updatePassword = async (req, res) => {
     try {
         const {id, currentPassword, newPassword, newPasswordConfirm} = req.body;
         const user = await User.findById(id);
- 
+
         if (await user.comparePasswords(currentPassword, user.password)) {
             if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
 

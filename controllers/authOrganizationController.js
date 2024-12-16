@@ -21,13 +21,12 @@ const createToken = (id) => {
 //////////////////////////////////////////////
 const cookieToken = (name, token, req, res) => {
     res.cookie(name, token, {
-        expires: new Date(
-            Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
         maxAge: 90 * 24 * 60 * 60 * 1000,
         secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
         httpOnly: true,
-        sameSite: "none",
-        path: "/"
+        // secure: false,
+        SameSite: "none"
     });
 }
 //////////////////////////////////////////////
@@ -233,8 +232,7 @@ exports.organizationLogin = async (req, res) => {
     // console.log(req.cookies['organizationJwt']);
     try {
 
-        const organization = await Organization.findOne({email: user})
-            .populate({path: 'country', model: "Country", select: " -_id"});
+        const organization = await Organization.findOne({email: user});
         if (!organization) return res.status(404).send('There is no organization with this email!');
 
         const rightPassword = await organization.correctPassword(password, organization.password)
@@ -242,6 +240,8 @@ exports.organizationLogin = async (req, res) => {
 
         let token;
         if (organization && rightPassword) {
+            await organization.populate({path: 'country', model: "Country", select: " -_id"})
+
             if (!req.cookies['organizationJwt']) {
                 const token = jwt.sign({id: organization._id}, process.env.JWT_SECRET_KEY, {
                     expiresIn: process.env.JWT_EXPIRES_IN,
@@ -252,8 +252,9 @@ exports.organizationLogin = async (req, res) => {
                 // console.log(token)
                 organization.tokens.push(token);
                 await organization.save();
-            } else {
 
+
+            } else {
                 token = req.cookies['organizationJwt'];
                 const tokenIsExists = organization.tokens.indexOf(token)
                 if (tokenIsExists === -1) {
@@ -263,9 +264,10 @@ exports.organizationLogin = async (req, res) => {
             }
 
             const {name, logo, banner, description, industryField, country, language, _id, uniqueId} = organization;
-            // console.log(banner)
+            console.log(req.body)
             res.json({
-                organization: {
+                status: 'success',
+                data: {
                     id: _id,
                     name,
                     logo,
@@ -276,7 +278,7 @@ exports.organizationLogin = async (req, res) => {
                     language,
                     uniqueId
                 },
-                token: token
+                token
             });
         } else {
             return res.status(401).send('Wrong email or password')
@@ -365,7 +367,6 @@ exports.forgetPassword = async (req, res) => {
         console.log(resetToken);
         await organization.save({validateBeforeSave: false});
         await new Email(organization, `${url}/reset-password?useAs=${useAs}&token=${resetToken}`).sendPasswordReset();
-
 
         res.status(200).json({
             status: 'success',

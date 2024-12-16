@@ -26,9 +26,7 @@ const cookieToken = (name, token, req, res) => {
         maxAge: 90 * 24 * 60 * 60 * 1000,
         secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
         httpOnly: true,
-        // secure: false,
-        SameSite: "none",
-        path: "/"
+        SameSite: "none"
     });
 }
 
@@ -232,22 +230,28 @@ exports.doctorLogin = async (req, res) => {
                     select: "title"
                 }
             ]);
-
+            let token
             if (!req.cookies['doctorJwt']) {
-                const token = jwt.sign({id: doctor.id}, process.env.JWT_SECRET_KEY, {
+                token = jwt.sign({id: doctor.id}, process.env.JWT_SECRET_KEY, {
                     expiresIn: process.env.JWT_EXPIRES_IN,
                 })
-                console.log("JWT_EXPIRES_IN:", process.env.JWT_EXPIRES_IN);
+                // console.log("JWT_EXPIRES_IN:", process.env.JWT_EXPIRES_IN);
                 cookieToken("doctorJwt", token, req, res);
 
                 doctor.tokens.push(token);
                 await doctor.save();
+            } else {
+                token = req.cookies['doctorJwt'];
+                const tokenIsExists = doctor.tokens.indexOf(token)
+                if (tokenIsExists === -1) {
+                    doctor.tokens.push(token);
+                    await doctor.save();
+                }
             }
-            const cookieJWT = await req.cookies['doctorJwt']
 
             res.status(200).json({
                 status: "success",
-                doctor: {
+                data: {
                     uniqueId: doctorUniqueId,
                     id: doctor._id,
                     firstName: doctor.fname,
@@ -256,7 +260,7 @@ exports.doctorLogin = async (req, res) => {
                     country: doctor.country.title,
                     specialty: doctor.specialty.title,
                     language: doctor.language.title,
-                    description: doctor.description
+                    description: doctor.description,
                 }
             });
         } else {
