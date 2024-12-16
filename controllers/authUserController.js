@@ -19,11 +19,10 @@ const createToken = (id) => {
 //////////////////////////////////////////////
 const cookieToken = (name, token, req, res) => {
     res.cookie(name, token, {
-        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
         maxAge: 90 * 24 * 60 * 60 * 1000,
-        secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
+        secure: true,
         httpOnly: true,
-        SameSite: "none"
+        sameSite: "none"
     });
 }
 
@@ -229,6 +228,7 @@ exports.activateUser = async (req, res) => {
 //////////////////////////////////////////////
 exports.userLogin = async (req, res) => {
     try {
+        console.log(`${req.protocol}://${req.get('host')}`)
         const email = req.body.user;
         const password = req.body.password;
 
@@ -257,7 +257,13 @@ exports.userLogin = async (req, res) => {
                     expiresIn: process.env.JWT_EXPIRES_IN,
                 })
 
-                await cookieToken("userJwt", token, req, res);
+                // await cookieToken("userJwt", token, req, res);
+                res.cookie("userJwt", token, {
+                    maxAge: 90 * 24 * 60 * 60 * 1000,
+                    secure: true,
+                    httpOnly: true,
+                    sameSite: "none"
+                });
 
                 console.log(req.cookies["userJwt"])
                 user.tokens.push(token);
