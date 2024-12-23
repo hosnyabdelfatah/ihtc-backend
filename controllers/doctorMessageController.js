@@ -100,7 +100,7 @@ exports.getAllDoctorMessagesOut = async (req, res) => {
         });
     } catch (err) {
         console.log(err);
-        err.status(500).send(err.message);
+        res.status(500).send(err.message);
     }
 }
 

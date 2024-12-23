@@ -23,10 +23,10 @@ const cookieToken = (name, token, req, res) => {
     res.cookie(name, token, {
         expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
         maxAge: 90 * 24 * 60 * 60 * 1000,
-        secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
+        secure: true,
         httpOnly: true,
         // secure: false,
-        SameSite: "none"
+        sameSite: "none"
     });
 }
 //////////////////////////////////////////////
@@ -268,20 +268,20 @@ exports.organizationLogin = async (req, res) => {
             res.json({
                 status: 'success',
                 data: {
-                    id: _id,
-                    name,
-                    logo,
-                    banner,
-                    description,
-                    country,
-                    industryField,
-                    language,
-                    uniqueId
+                    id: organization._id,
+                    name: organization.name,
+                    logo: organization.logo,
+                    banner: organization.banner,
+                    description: organization.description,
+                    country: organization.country,
+                    industryField: organization.industruField,
+                    language: organization.language,
+                    uniqueId: organization.uniqueId
                 },
                 token
             });
         } else {
-            return res.status(401).send('Wrong email or password')
+            return res.status(401).send('Wrong email or password');
         }
     } catch (err) {
         console.log(err)

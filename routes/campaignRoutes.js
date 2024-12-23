@@ -4,9 +4,10 @@ const campaignController = require('../controllers/campaignController');
 
 const router = express.Router({mergeParams: true});
 
-router.route('/:organizationId')
-    .get(campaignController.getAllCampaigns)
-    .post(campaignController.uploadCampaignMedia, campaignController.createCampaign);
+router.route('/').post(campaignController.uploadCampaignMedia, campaignController.createCampaign);
+
+router.route('/:organizationId').get(campaignController.getAllCampaigns);
+
 
 router.route('/campaignDetails/:campaignId').get(campaignController.getOneCampaign)
 // router.route('/:doctorId').get(authDoctor.isLoggedIn, campaignController.getDoctorCampaigns)

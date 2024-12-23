@@ -1,4 +1,5 @@
 const Doctor = require('../model/doctorModel');
+const filterBody = require("../helpers/filterBody");
 
 exports.getAllDoctors = async (req, res) => {
     try {
@@ -17,7 +18,7 @@ exports.getAllDoctors = async (req, res) => {
 
         const totalDocs = await Doctor.countDocuments();
         const totalPages = Math.ceil(totalDocs / limit);
-
+        const countAllDoctorsSearch = await Doctor.countDocuments(filter);
         const allDoctors = await Doctor.find(filter).skip(startIndex).limit(limit)
             .populate([
                 {path: "language", model: "Language", select: "title -_id"},
@@ -29,14 +30,16 @@ exports.getAllDoctors = async (req, res) => {
                 }
             ]);
 
-        const totalCurrentSearchDoctorsPages = Math.ceil(allDoctors.length / limit)
+        const totalCurrentSearchDoctorsPages = Math.ceil(countAllDoctorsSearch / limit)
         const pages = !country && !specialty ? totalPages : totalCurrentSearchDoctorsPages;
         // console.log(`${allDoctors.length} / ${limit}`)
 
         res.status(200).json({
-            count: allDoctors.length,
+            countResultDocuments: countAllDoctorsSearch,
+            countPerPage: allDoctors.length,
             currentPage: page,
             pages,
+            totalCurrentSearchDoctorsPages,
             totalItems: totalDocs,
             data: allDoctors,
         });
@@ -47,20 +50,22 @@ exports.getAllDoctors = async (req, res) => {
 }
 
 exports.getDoctor = async (req, res) => {
+    console.log(req.params)
     try {
         const doctorId = req.params.doctorId;
         console.log(doctorId)
-        const doctor = await Doctor.findOne({_id: doctorId}).populate([
-            {path: "language", model: "Language", select: "title -_id"},
-            {path: "country", model: "Country", select: "title -_id"},
-            {
-                path: "specialty",
-                model: "DoctorSpecialty",
-                select: "title -_id"
-            }
-        ]);
+        const doctor = await Doctor.findById(doctorId);
 
         if (!doctor) return res.status(400).send('There is no doctor with this unique ID');
+
+        await doctor.populate([
+            {path: "language", model: "Language"},
+            {path: "country", model: "Country"},
+            {
+                path: "specialty",
+                model: "DoctorSpecialty"
+            }
+        ]);
 
         res.status(200).json({
             status: 'success',
@@ -69,9 +74,9 @@ exports.getDoctor = async (req, res) => {
                 firstName: doctor.fname,
                 lastName: doctor.lname,
                 profileImage: doctor.image,
-                country: doctor.country.title.trim(),
-                specialty: doctor.specialty.title.trim(),
-                language: doctor.language.title.trim(),
+                country: doctor.country,
+                specialty: doctor.specialty,
+                language: doctor.language,
                 description: doctor.description
             }
         })
@@ -87,10 +92,76 @@ exports.doctorGetMe = (req, res) => {
     console.log(doctor)
 
     res.status(200).json({
-        name: doctor.fname + ' ' + doctor.lname,
-        avatar: doctor.image
+        data: {
+            id: doctor._id,
+            firstName: doctor.fname,
+            lastName: doctor.lname,
+            email: doctor.email,
+            specialty: doctor.specialty,
+            country: doctor.country,
+            language: doctor.language,
+            image: doctor.image,
+            workPlace: doctor.workPlace,
+            whatsapp: doctor.whatsapp,
+            facebook: doctor.facebookId,
+            jobTitle: doctor.jobTitle,
+            description: doctor.description
+        }
     })
 };
+
+exports.updateMe = async (req, res) => {
+
+    try {
+
+        let eMessages = '';
+        const errMessages = [];
+        const doctor = req.doctor;
+        if (!doctor) return res.status(404).send('You are not login, please login!');
+
+        const doctorInfo = ["fname", "lname", "email", "password", "passwordConfirm",
+            "whatsapp", "description", "workPlace", "facebookId", "specialty",
+            "language", "jobTitle", "country"
+        ];
+        const {
+            fname, lname, email, password, passwordConfirm, whatsapp, description,
+            workPlace, facebookId, specialty, language, jobTitle, country
+        } = req.body;
+
+        if (!fname) errMessages.push('You must enter your first name!');
+        if (!lname) errMessages.push('You must enter your last name!');
+        if (!email) errMessages.push('You must enter your email!');
+        if (!whatsapp) errMessages.push('Whatsapp number is require!');
+        if (!specialty) errMessages.push('Specialty number is require!');
+        if (!country) errMessages.push('Country number is require!')
+
+        if (errMessages.length > 0) {
+            errMessages.forEach(message => eMessages += `${message}\n`);
+            return res.status(400).send(eMessages);
+        }
+        const doctorRequest = filterBody(req.body, ...doctorInfo);
+
+        const updateDoctor = await Doctor.findByIdAndUpdate(
+            doctor.id,
+            doctorRequest,
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!updateDoctor) return res.status(404).send("No doctor found with this ID");
+
+        res.status(202).json({
+            status: "success",
+            message: "Profile update success"
+        })
+
+    } catch (err) {
+        console.log(err)
+        res.status(500).send(err.message);
+    }
+}
 
 
 exports.doctorDeleteMe = async (req, res) => {
@@ -103,7 +174,7 @@ exports.doctorDeleteMe = async (req, res) => {
     }
     doctor.active = req.body.active;
 
-    res.status(203).json({
+    res.status(202).json({
         status: 'success',
         message: 'doctor account not activate',
     });

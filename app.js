@@ -17,10 +17,6 @@ const doctorMessageRoutes = require('./routes/doctorMessageRoutes');
 
 const app = express();
 
-// const allowedOrigins = process.env.NODE_ENV === 'production'
-//     ? ["https://ihtc-frontend.vercel.app", "https://ihtc-backend.vercel.app"]
-//     : ["http://localhost:3000"];
-
 const allowedOrigins = [
     "https://ihtc-frontend.vercel.app",
     "https://ihtc-backend.vercel.app/languages",
@@ -48,7 +44,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Handle preflight requests globally
-// app.options('*', cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Referrer Policy Middleware (optional)
 app.use((req, res, next) => {
@@ -70,10 +66,11 @@ app.use(express.urlencoded({extended: true}));
 app.use(express.json({limit: "10kb"}));
 app.use(cookieParser());
 
-
 app.get('/', (req, res) => {
     res.send('Hello in IHTC World!');
 });
+
+
 app.use('/specialties', doctorSpecialtyRoutes);
 app.use('/organizations', organizationRoutes);
 app.use('/roles', roleRoutes);

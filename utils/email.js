@@ -26,16 +26,6 @@ module.exports = class Email {
             });
         }
 
-        // sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-        // return nodemailer.createTransport({
-        //     service: 'SendGrid',
-        //     ignoreTLS: true,
-        //     auth: {
-        //         user: process.env.SENDGRID_USERNAME,
-        //         pass: process.env.SENDGRID_PASSWORD
-        //     }
-        // });
-
         return nodemailer.createTransport({
             host: process.env.EMAIL_HOST,
             port: process.env.EMAIL_PORT,

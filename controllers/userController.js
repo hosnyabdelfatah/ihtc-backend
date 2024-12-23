@@ -24,7 +24,7 @@ exports.getAllUsers = async (req, res) => {
                 {path: "country", model: "Country", select: "title -_id"},
                 {
                     path: "specialty",
-                    model: "UserSpecialty",
+                    model: "DoctorSpecialty",
                     select: "title -_id"
                 }
             ]);

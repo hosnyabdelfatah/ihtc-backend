@@ -12,7 +12,12 @@ const handleUserRefreshToken = async (req, res) => {
     // console.log("Cookie is:" + userRefreshToken);
 
     const userId = jwt.verify(userRefreshToken, process.env.JWT_SECRET_KEY);
-    const foundUser = await User.findById(userId.id);
+    const foundUser = await User.findById(userId.id).populate([
+        {path: "language", model: "Language"},
+        {path: "country", model: "Country"},
+        {path: "specialty", model: "DoctorSpecialty"}
+    ]);
+    ;
     if (!foundUser) return res.status(403).json({message: "No user Found"}); //Forbidden
     console.log(foundUser)
     res.json({

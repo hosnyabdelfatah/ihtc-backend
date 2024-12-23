@@ -108,7 +108,7 @@ doctorSchema.pre('save', async function (next) {
 });
 
 doctorSchema.pre('save', function (next) {
-    if (!this.isModified || this.isNew) return next();
+    if (!this.isModified('password') || this.isNew) return next();
     this.passwordChangedAt = Date.now() - 1000;
     next();
 });
