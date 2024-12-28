@@ -133,7 +133,7 @@ exports.getOneMessage = async (req, res) => {
 exports.createMessage = async (req, res) => {
 
     try {
-        const fileBuffer = req.file.buffer;
+        let fileBuffer;
         let newMessage;
         let sender;
         let receiver;
@@ -144,18 +144,21 @@ exports.createMessage = async (req, res) => {
         const keys = ["subject", "from", "to", "status", "messageText"];
         const messagenRequest = filterBody(req.body, ...keys);
 
-        const uploadResult = await new Promise((resolve, reject) => {
-            const stream = cloudinary.uploader.upload_stream((error, result) => {
-                if (error) reject(error);
-                else resolve(result);
+        if (req.file) {
+            fileBuffer = req.file.buffer;
+            const uploadResult = await new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream((error, result) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                });
+                // Convert buffer to stream
+                Readable.from(fileBuffer).pipe(stream);
             });
-            // Convert buffer to stream
-            Readable.from(fileBuffer).pipe(stream);
-        });
 
-        const fileUrl = uploadResult.secure_url;
-        if (req.file)
-            attach = fileUrl;
+            const fileUrl = uploadResult.secure_url;
+            if (req.file)
+                attach = fileUrl;
+        }
 
 
         newMessage = await DoctorMessage.create(

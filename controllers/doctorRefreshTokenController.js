@@ -20,7 +20,7 @@ const handleDoctorRefreshToken = async (req, res) => {
         ]);
 
         if (!foundDoctor) return res.status(403).json({message: "No doctor Found"}); //Forbidden
-        console.log(foundDoctor)
+        // console.log(foundDoctor)
         res.json({
             data: {
                 uniqueId: foundDoctor.UniqueId,

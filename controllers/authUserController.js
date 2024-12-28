@@ -159,13 +159,9 @@ exports.userSignUp = async (req, res) => {
         const url = `${req.protocol}://${req.get('host')}`;
 
         const user = await User.findOne({uniqueId: userUniqueId}).populate([
-            {path: "language", model: "Language", select: "title"},
-            {path: "country", model: "Country", select: "title"},
-            {
-                path: "specialty",
-                model: "UserSpecialty",
-                select: "title"
-            }
+            {path: "language", model: "Language"},
+            {path: "country", model: "Country"},
+            {path: "specialty", model: "DoctorSpecialty"}
         ]);
 
         const token = jwt.sign({id: user._id}, process.env.JWT_SECRET_KEY, {
@@ -451,6 +447,51 @@ exports.updatePassword = async (req, res) => {
     }
 }
 
+exports.updateAvatar = async (req, res) => {
+    try {
+        const id = req.params.id
+        if (!id) return res.status(400).send('You are not logged id, please log in.');
+
+        const fileBuffer = req.file.buffer;
+
+        let avatar = ``;
+
+        const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream((error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+            });
+            // Convert buffer to stream
+            Readable.from(fileBuffer).pipe(stream);
+        });
+
+        const fileUrl = uploadResult.secure_url;
+        console.log(`Avatar URL is: ${fileUrl}`);
+
+        const currentUser = await User.findById(id);
+        if (!currentUser) return res.status(404).send('There is no user with this id, please log in');
+
+        console.log(currentUser);
+
+        if (req.file) {
+            avatar = fileUrl;
+        } else {
+            avatar = currentUser.avatar;
+        }
+
+        currentUser.avatar = avatar;
+        await currentUser.save({validateBeforeSave: true, new: true});
+
+        res.status(200).json({
+            status: 'success',
+            data: currentUser
+        });
+
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err.message);
+    }
+}
 
 exports.agreeRole = (...roles) => {
     return (req, res, next) => {

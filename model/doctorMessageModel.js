@@ -15,7 +15,7 @@ const doctorMessageSchema = new Schema({
         },
         messageText: {
             type: String,
-            required: [true, 'Campaign text is require'],
+            required: [true, 'Message text is require'],
         },
         receiver: {
             type: mongoose.Schema.Types.ObjectId,

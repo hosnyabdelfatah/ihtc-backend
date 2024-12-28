@@ -429,6 +429,95 @@ exports.updatePassword = async (req, res) => {
     }
 }
 
+// exports.updateProfileImage = async (req, res) => {
+//     const fileBuffer = req.file.buffer;
+//     console.log(fileBuffer);
+//     try {
+//
+//
+//         let image = ``;
+//
+//         const uploadResult = await new Promise((resolve, reject) => {
+//             const stream = cloudinary.uploader.upload_stream((error, result) => {
+//                 if (error) reject(error);
+//                 else resolve(result);
+//             });
+//             // Convert buffer to stream
+//             Readable.from(fileBuffer).pipe(stream);
+//         });
+//         const id = req.params.id;
+//         console.log(id);
+//
+//         if (!id) return res.status(400).send("You are not logged in, please login");
+//
+//         const currentDoctor = await Doctor.findById(id);
+//         if (!currentDoctor) return res.status(404).send("There is no doctor with this ID!, please login!");
+//
+//         let fileUrl;
+//         if (req.file.image) {
+//             fileUrl = uploadResult.secure_url;
+//         } else {
+//             fileUrl = currentDoctor.image;
+//         }
+//
+//         image = fileUrl;
+//         currentDoctor.image = image
+//         await currentDoctor.save({validateBeforeSave: true, new: true});
+//
+//         const updatedDoctor = await Doctor.findById(id);
+//
+//         res.status(200).json({
+//             data: updatedDoctor
+//         });
+//     } catch (err) {
+//         console.log(err);
+//         res.status(500).send(err.message);
+//     }
+// }
+
+exports.updateAvatar = async (req, res) => {
+    try {
+        const fileBuffer = req.file.buffer;
+        let image = ``;
+
+        const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream((error, result) => {
+                if (error) reject(error);
+                else resolve(result);
+            });
+            // Convert buffer to stream
+            Readable.from(fileBuffer).pipe(stream);
+        });
+        const id = req.params.id;
+        console.log(id);
+
+        if (!id) return res.status(400).send("You are not logged in, please login");
+
+        const currentDoctor = await Doctor.findById(id);
+        if (!currentDoctor) return res.status(404).send("There is no doctor with this ID!, please login!");
+
+        let fileUrl;
+        if (fileBuffer) {
+            fileUrl = uploadResult.secure_url;
+        } else {
+            fileUrl = currentDoctor.image;
+        }
+        console.log(fileUrl)
+
+        image = fileUrl;
+        currentDoctor.image = image
+        await currentDoctor.save({validateBeforeSave: true, new: true});
+
+        const updatedDoctor = await Doctor.findById(id);
+
+        res.status(200).json({
+            data: updatedDoctor
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err.message);
+    }
+}
 
 exports.agreeRole = (...roles) => {
     return (req, res, next) => {

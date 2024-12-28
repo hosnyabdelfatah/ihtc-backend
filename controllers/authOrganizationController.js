@@ -96,7 +96,6 @@ exports.uploadOrganizationImages = upload.fields(
 );
 /////////////////////////
 
-
 exports.organizationSignup = async (req, res) => {
     console.log(`REQ.FILE IS: ${JSON.stringify(req.body)}`)
     console.log(`REQ.FILE IS: ${req.file}`)
@@ -240,7 +239,7 @@ exports.organizationLogin = async (req, res) => {
 
         let token;
         if (organization && rightPassword) {
-            await organization.populate({path: 'country', model: "Country", select: " -_id"})
+            await organization.populate({path: 'country', model: "Country"})
 
             if (!req.cookies['organizationJwt']) {
                 const token = jwt.sign({id: organization._id}, process.env.JWT_SECRET_KEY, {
@@ -292,25 +291,6 @@ exports.organizationLogin = async (req, res) => {
 exports.logout = async (req, res, next) => {
     try {
         // console.log(req.cookies.organizationJwt)
-        const currentToken = await req.cookies.organizationJwt;
-
-        if (!currentToken) {
-            return res.status(401).send('You not logged in please login')
-        }
-        if (Object.keys(req.cookies).length <= 0) return res.status(401).send('You not logged in please login')
-
-        const decoded = jwt.verify(currentToken, process.env.JWT_SECRETE_KEY)
-
-        const currentOrganization = await Organization.findById(decoded.id);
-        if (!currentOrganization) return res.status(401).send('The organization belonging to this token does no longer exist.');
-
-        if (currentOrganization.changedPasswordAfter(decoded.iat)) {
-            return res.status(401).send('Organization recently changed password! Please log in again.');
-        }
-        currentOrganization.tokens = currentOrganization.tokens.filter(token => token !== currentToken);
-        currentOrganization.save();
-
-
         await res.cookie('organizationJwt', 'logged out', {
             expires: new Date(Date.now() + 10),
             httpOnly: true,
@@ -432,6 +412,79 @@ exports.updatePassword = async (req, res) => {
     } catch (err) {
         console.log(err.message)
         return res.send(err.message)
+    }
+}
+
+exports.updateBannerLogo = async (req, res) => {
+
+    try {
+        const id = req.params.id;
+        if (!id) return res.status(400).send('You are not logged in, please log in!');
+
+        console.log(`REQ.FILE IS: ${req.file}`)
+
+        const files = req.files;
+
+
+        const uploadToCloudinary = (fileBuffer, folderName) => {
+            return new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {folder: folderName},
+                    (error, result) => {
+                        if (error) reject(error);
+                        else resolve(result.secure_url);
+                    }
+                );
+
+                Readable.from(fileBuffer).pipe(stream);
+            });
+        };
+
+
+        const organization = await Organization.findById(id);
+        if (!organization) return res.status(404).send('There is no organization with this ID!');
+
+        let bannerUrl;
+        let logoUrl;
+
+        if (files?.banner) {
+            // Upload banner
+            bannerUrl = await uploadToCloudinary(
+                files.banner[0].buffer,
+                'banners' // Folder name in Cloudinary
+            );
+        } else {
+            bannerUrl = organization.banner;
+        }
+
+        if (files?.logo) {
+            // Upload logo
+            logoUrl = await uploadToCloudinary(
+                files.logo[0].buffer,
+                'logos' // Folder name in Cloudinary
+            );
+        } else {
+            logoUrl = organization.logo;
+        }
+
+
+        let banner = bannerUrl;
+        let logo = logoUrl;
+        console.log(banner)
+        console.log(logo)
+
+        organization.banner = banner;
+        organization.logo = logo;
+
+        await organization.save({validateBeforeSave: true, new: true});
+        const updatedOrganization = await Organization.findById(id)
+
+        res.status(200).json({
+            data: updatedOrganization
+        });
+
+    } catch (err) {
+        console.log(err)
     }
 }
 

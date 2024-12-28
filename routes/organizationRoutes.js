@@ -23,9 +23,12 @@ router.route('/forgetPassword').post(authOrganizationController.forgetPassword);
 router.route('/resetPassword/:token').patch(authOrganizationController.resetPassword);
 router.route('/updatePassword').patch(authOrganizationController.updatePassword)
 
-router.use(authOrganizationController.isLoggedIn);
+// router.use(authOrganizationController.isLoggedIn);
 // router.route('/campaigns').get(organizationController.allOrganizationMessages);
-router.route('/organizationGetMe').get(organizationController.organizationGetMe);
+router.route('/updateOrganization/:id').patch(organizationController.updateOrganization)
+router.route('/updateBannerLogo/:id').patch(authOrganizationController.uploadOrganizationImages, authOrganizationController.updateBannerLogo);
 router.route('/logout').get(authOrganizationController.logout);
+router.route('/organizationGetMe/:id').get(organizationController.organizationGetMe);
+
 
 module.exports = router

@@ -44,7 +44,7 @@ const userSchema = new Schema({
             required: [true, 'Whatsapp number is require!'],
             unique: [true, 'This whatsapp number is already exists!']
         },
-        facebook: String,
+        facebookId: String,
         specialty: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'DoctorSpecialty',

@@ -87,37 +87,40 @@ exports.getDoctor = async (req, res) => {
     }
 }
 
-exports.doctorGetMe = (req, res) => {
-    const doctor = req.doctor;
-    console.log(doctor)
+exports.doctorGetMe = async (req, res) => {
+    const id = req.params.id;
+    console.log(req.params)
+    const me = await Doctor.findById(id).populate([
+        {path: "language", model: "Language"},
+        {path: "country", model: "Country"},
+        {path: "specialty", model: "DoctorSpecialty"}
+    ]);
 
     res.status(200).json({
         data: {
-            id: doctor._id,
-            firstName: doctor.fname,
-            lastName: doctor.lname,
-            email: doctor.email,
-            specialty: doctor.specialty,
-            country: doctor.country,
-            language: doctor.language,
-            image: doctor.image,
-            workPlace: doctor.workPlace,
-            whatsapp: doctor.whatsapp,
-            facebook: doctor.facebookId,
-            jobTitle: doctor.jobTitle,
-            description: doctor.description
+            id: me._id,
+            firstName: me.fname,
+            lastName: me.lname,
+            email: me.email,
+            specialty: me.specialty,
+            country: me.country,
+            language: me.language,
+            image: me.image,
+            workPlace: me.workPlace,
+            whatsapp: me.whatsapp,
+            facebook: me.facebookId,
+            jobTitle: me.jobTitle,
+            description: me.description
         }
     })
 };
 
 exports.updateMe = async (req, res) => {
-
     try {
-
+        const id = req.params.id
         let eMessages = '';
         const errMessages = [];
-        const doctor = req.doctor;
-        if (!doctor) return res.status(404).send('You are not login, please login!');
+        if (!id) return res.status(400).send('You are not login, please login!');
 
         const doctorInfo = ["fname", "lname", "email", "password", "passwordConfirm",
             "whatsapp", "description", "workPlace", "facebookId", "specialty",
@@ -142,13 +145,7 @@ exports.updateMe = async (req, res) => {
         const doctorRequest = filterBody(req.body, ...doctorInfo);
 
         const updateDoctor = await Doctor.findByIdAndUpdate(
-            doctor.id,
-            doctorRequest,
-            {
-                new: true,
-                runValidators: true
-            }
-        );
+            id, doctorRequest, {new: true, runValidators: true});
 
         if (!updateDoctor) return res.status(404).send("No doctor found with this ID");
 
