@@ -288,8 +288,9 @@ exports.forgetPassword = async (req, res) => {
 
         const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.
                    if you didn't forgot your password please ignore this email!`;
-
-        await new Email(doctor, `${url}/reset-password?useAs=${useAs}&token=${resetToken}`).sendPasswordReset();
+        console.log(`${url}/reset-password?useAs=${useAs}&token=${resetToken}`)
+        await new Email(doctor,
+            `${url}/reset-password?useAs=${useAs}&token=${resetToken}`).sendPasswordReset();
 
 
         res.status(200).json({
@@ -329,6 +330,10 @@ exports.resetPassword = async (req, res) => {
         cookieToken("doctorJwt", token, req, res);
 
         await doctor.save();
+
+        await new Email(doctor,
+            `${url}/reset-password?useAs=${useAs}&token=${resetToken}`).sendPasswordResetSuccess();
+
         res.status(200).send('Successful reset password');
     } catch (err) {
         return res.send(err.message);
@@ -398,31 +403,35 @@ exports.isLoggedIn = async (req, res, next) => {
 //////////////////////////////////////////////
 exports.updatePassword = async (req, res) => {
     try {
-
-
+        console.log(req.body)
         const {id, currentPassword, newPassword, newPasswordConfirm} = req.body;
         const doctor = await Doctor.findById(id);
 
-        if (await doctor.correctPassword(currentPassword, doctor.password)) {
-
-            if (newPassword.trim() !== newPasswordConfirm.trim()) return res.status(401).send('New password not match  new password  confirm!');
-
-            doctor.password = newPassword;
-            await doctor.save({validateBeforeSave: true, new: true});
-
-            const token = jwt.sign({id: doctor.id}, process.env.JWT_SECRET_KEY, {
-                expiresIn: process.env.JWT_EXPIRES_IN,
-            });
-
-            cookieToken("doctorJwt", token, req, res);
-
-            doctor.tokens.push(token);
-            await doctor.save();
-
-            res.status(200).json({
-                message: 'Password update successful'
-            });
+        if (!(await doctor.correctPassword(currentPassword, doctor.password))) {
+            return res.status(401).send('Wrong current password!, please write a correct current password.');
         }
+
+        if (currentPassword === newPassword) return res.status(400).send("You new password is the same with current password !,please write new password.")
+
+        if (newPassword.trim() !== newPasswordConfirm.trim()) return res.status(401).send('New password not match  new password  confirm!');
+
+        doctor.password = newPassword;
+        await doctor.save({validateBeforeSave: true, new: true});
+
+        const token = jwt.sign({id: doctor.id}, process.env.JWT_SECRET_KEY, {
+            expiresIn: process.env.JWT_EXPIRES_IN,
+        });
+
+        cookieToken("doctorJwt", token, req, res);
+
+        doctor.tokens.push(token);
+        await doctor.save();
+
+
+        res.status(200).json({
+            message: 'Password update successful'
+        });
+
     } catch (err) {
         console.log(err)
         return res.status(500).send(err.message)

@@ -389,7 +389,6 @@ exports.resetPassword = async (req, res) => {
 }
 
 //////////////////////////////////////////////
-
 exports.updatePassword = async (req, res) => {
     try {
         const {id, currentPassword, newPassword, newPasswordConfirm} = req.body;
@@ -397,18 +396,20 @@ exports.updatePassword = async (req, res) => {
 
 
         if (await organization.correctPassword(currentPassword, organization.password)) {
-            if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
-
-            organization.password = newPassword;
-            await organization.save({validateBeforeSave: true, new: true});
-
-            const token = createToken(organization._id);
-            cookieToken("organizationJwt", token, req, res);
-
-            res.status(200).json({
-                message: 'Password update successful'
-            });
+            return res.status(401).send('Wrong current password!, please write a correct current password.');
         }
+        if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
+
+        organization.password = newPassword;
+        await organization.save({validateBeforeSave: true, new: true});
+
+        const token = createToken(organization._id);
+        cookieToken("organizationJwt", token, req, res);
+
+        res.status(200).json({
+            message: 'Password update successful'
+        });
+
     } catch (err) {
         console.log(err.message)
         return res.send(err.message)

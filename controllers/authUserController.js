@@ -429,18 +429,20 @@ exports.updatePassword = async (req, res) => {
         const user = await User.findById(id);
 
         if (await user.comparePasswords(currentPassword, user.password)) {
-            if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
-
-            user.password = newPassword;
-            await user.save({validateBeforeSave: true, new: true});
-
-            const token = createToken(user._id);
-            cookieToken("userJwt", token, req, res);
-
-            res.status(200).json({
-                message: 'Password update successful'
-            });
+            return res.status(401).send('Wrong current password!, please write correct current password.');
         }
+        if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
+
+        user.password = newPassword;
+        await user.save({validateBeforeSave: true, new: true});
+
+        const token = createToken(user._id);
+        cookieToken("userJwt", token, req, res);
+
+        res.status(200).json({
+            message: 'Password update successful'
+        });
+
     } catch (err) {
         console.log(err)
         return res.status(500).send(err.message)
