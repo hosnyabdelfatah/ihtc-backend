@@ -288,7 +288,7 @@ exports.forgetPassword = async (req, res) => {
 
         const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.
                    if you didn't forgot your password please ignore this email!`;
-        console.log(`${url}/reset-password?useAs=${useAs}&token=${resetToken}`)
+        // console.log(`${url}/reset-password?useAs=${useAs}&token=${resetToken}`)
         await new Email(doctor,
             `${url}/reset-password?useAs=${useAs}&token=${resetToken}`).sendPasswordReset();
 
@@ -308,13 +308,14 @@ exports.forgetPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
 
     try {
+        console.log(req.body)
         const hashedToken = createHash('sha256').update(req.params.token).digest('hex');
 
         const doctor = await Doctor.findOne({passwordResetToken: hashedToken, passwordResetExpires: {$gt: Date.now()}});
 
         if (!doctor) return res.status(401).send('This url is expired!');
 
-        const {newPassword, newPasswordConfirm} = req.body;
+        const {url, newPassword, newPasswordConfirm} = req.body;
         if (!newPassword || !newPasswordConfirm) return res.status(401).send('Please write password  and confirm password !');
         if (newPassword !== newPasswordConfirm) return res.status(401).send('Confirm new password not match new password!');
 
@@ -329,10 +330,12 @@ exports.resetPassword = async (req, res) => {
         })
         cookieToken("doctorJwt", token, req, res);
 
-        await doctor.save();
 
-        await new Email(doctor,
-            `${url}/reset-password?useAs=${useAs}&token=${resetToken}`).sendPasswordResetSuccess();
+        await new Email(doctor, `${url}/login`).sendResetSuccess();
+
+
+        await doctor.save();
+        console.log("DONE")
 
         res.status(200).send('Successful reset password');
     } catch (err) {
