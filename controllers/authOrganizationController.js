@@ -370,7 +370,7 @@ exports.resetPassword = async (req, res) => {
         const organization = await Organization.findOne({passwordResetToken: hashedToken});
         if (!organization) return res.status(401).send('This url is expired!');
 
-        const {newPassword, newPasswordConfirm} = req.body;
+        const {url, newPassword, newPasswordConfirm} = req.body;
         if (!newPassword || !newPasswordConfirm) return res.status(401).send('Please write password  and confirm password !');
         if (newPassword !== newPasswordConfirm) return res.status(401).send('Confirm new password not match new password!');
 
@@ -382,6 +382,9 @@ exports.resetPassword = async (req, res) => {
         cookieToken("organizationJwt", token, req, res);
 
         await organization.save();
+
+        await new Email(doctor, `${url}/login`).sendResetSuccess();
+
         res.status(200).send('Successful reset password');
     } catch (err) {
         return res.send(err.message);

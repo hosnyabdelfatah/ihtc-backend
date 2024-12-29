@@ -282,12 +282,12 @@ exports.forgetPassword = async (req, res) => {
 
         await doctor.save({validateBeforeSave: false});
 
-        const resetURL = `${req.protocol}://${req.get(
-            'host'
-        )}/doctors/resetPassword/${resetToken}`;
+        // const resetURL = `${req.protocol}://${req.get(
+        //     'host'
+        // )}/doctors/resetPassword/${resetToken}`;
 
-        const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.
-                   if you didn't forgot your password please ignore this email!`;
+        // const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.
+        //            if you didn't forgot your password please ignore this email!`;
         // console.log(`${url}/reset-password?useAs=${useAs}&token=${resetToken}`)
         await new Email(doctor,
             `${url}/reset-password?useAs=${useAs}&token=${resetToken}`).sendPasswordReset();
@@ -330,12 +330,10 @@ exports.resetPassword = async (req, res) => {
         })
         cookieToken("doctorJwt", token, req, res);
 
-
         await new Email(doctor, `${url}/login`).sendResetSuccess();
 
-
         await doctor.save();
-        console.log("DONE")
+
 
         res.status(200).send('Successful reset password');
     } catch (err) {
