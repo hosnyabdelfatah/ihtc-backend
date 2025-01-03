@@ -1,6 +1,8 @@
 const Doctor = require('../model/doctorModel');
 const filterBody = require("../helpers/filterBody");
 
+const selectionStore = {};
+
 exports.getAllDoctors = async (req, res) => {
     try {
         let filter = {};
@@ -19,16 +21,16 @@ exports.getAllDoctors = async (req, res) => {
         const totalDocs = await Doctor.countDocuments();
         const totalPages = Math.ceil(totalDocs / limit);
         const countAllDoctorsSearch = await Doctor.countDocuments(filter);
+
+
         const allDoctors = await Doctor.find(filter).skip(startIndex).limit(limit)
             .populate([
-                {path: "language", model: "Language", select: "title -_id"},
-                {path: "country", model: "Country", select: "title -_id"},
-                {
-                    path: "specialty",
-                    model: "DoctorSpecialty",
-                    select: "title -_id"
-                }
+                {path: "language", model: "Language"},
+                {path: "country", model: "Country"},
+                {path: "specialty", model: "DoctorSpecialty"}
             ]);
+        allDoctors.forEach((doctor) => selectionStore[doctor._id] = true)
+        console.log(selectionStore);
 
         const totalCurrentSearchDoctorsPages = Math.ceil(countAllDoctorsSearch / limit)
         const pages = !country && !specialty ? totalPages : totalCurrentSearchDoctorsPages;
@@ -41,6 +43,7 @@ exports.getAllDoctors = async (req, res) => {
             pages,
             totalCurrentSearchDoctorsPages,
             totalItems: totalDocs,
+            selectAllSearchResult: selectionStore,
             data: allDoctors,
         });
     } catch (err) {
@@ -48,6 +51,7 @@ exports.getAllDoctors = async (req, res) => {
         res.status(500).send(err.message);
     }
 }
+
 
 exports.getDoctor = async (req, res) => {
     console.log(req.params)
