@@ -28,7 +28,7 @@ router.route('/updatePassword').patch(authOrganizationController.updatePassword)
 router.route('/updateOrganization/:id').patch(organizationController.updateOrganization)
 router.route('/updateBannerLogo/:id').patch(authOrganizationController.uploadOrganizationImages, authOrganizationController.updateBannerLogo);
 router.route('/logout').get(authOrganizationController.logout);
-router.route('/organizationGetMe/:id').get(organizationController.organizationGetMe);
+router.route('/me/:id').get(organizationController.organizationGetMe);
 
 
 module.exports = router
