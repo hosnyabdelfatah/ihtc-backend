@@ -8,7 +8,10 @@ const NEW_DB = `mongodb+srv://${process.env.NEW_DB_UN}:${process.env.NEW_DB_PW}@
 
 const port = process.env.PORT || 5000;
 
-mongoose.connect(NEW_DB).then(() => {
+mongoose.connect(NEW_DB, {
+    maxPoolSize: 10, // Replaces `poolSize`, sets max concurrent connections in the pool
+    serverSelectionTimeoutMS: 5000, // Adjust timeout for server selection
+}).then(() => {
     console.log("DB Connection successful!");
 }).catch((err) => {
     console.log(err.message);

@@ -1,10 +1,11 @@
 const Doctor = require('../model/doctorModel');
 const filterBody = require("../helpers/filterBody");
 
-const selectionStore = {};
 
 exports.getAllDoctors = async (req, res) => {
     try {
+        const selectionStore = {};
+
         let filter = {};
         const page = parseInt(req.query.page) || 1;
         const limit = req.query.limit || 20;
@@ -14,7 +15,7 @@ exports.getAllDoctors = async (req, res) => {
         filter = country ? {...filter, country} : {};
         filter = specialty ? {...filter, specialty} : {...filter};
 
-        console.log(filter)
+        // console.log(filter)
 
         const startIndex = (page - 1) * limit;
 
@@ -29,8 +30,14 @@ exports.getAllDoctors = async (req, res) => {
                 {path: "country", model: "Country"},
                 {path: "specialty", model: "DoctorSpecialty"}
             ]);
-        allDoctors.forEach((doctor) => selectionStore[doctor._id] = true)
-        console.log(selectionStore);
+
+        let selectAllDoctors
+        if (filter.country || filter.specialty) {
+            selectAllDoctors = await Doctor.find(filter);
+            selectAllDoctors.forEach((doctor) => selectionStore[doctor._id] = true)
+            // console.log(selectionStore);
+        }
+
 
         const totalCurrentSearchDoctorsPages = Math.ceil(countAllDoctorsSearch / limit)
         const pages = !country && !specialty ? totalPages : totalCurrentSearchDoctorsPages;
@@ -38,12 +45,15 @@ exports.getAllDoctors = async (req, res) => {
 
         res.status(200).json({
             countResultDocuments: countAllDoctorsSearch,
+
             countPerPage: allDoctors.length,
             currentPage: page,
             pages,
             totalCurrentSearchDoctorsPages,
             totalItems: totalDocs,
             selectAllSearchResult: selectionStore,
+            // selectAllDoctors,
+            selectAllSearchResultCount: selectAllDoctors ? Object.keys(selectionStore) : 0,
             data: allDoctors,
         });
     } catch (err) {

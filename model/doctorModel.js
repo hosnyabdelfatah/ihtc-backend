@@ -97,6 +97,10 @@ const doctorSchema = new Schema({
         toObject: {virtuals: true},
     });
 
+doctorSchema.index({country: 1});
+doctorSchema.index({specialty: 1});
+
+
 doctorSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
 
