@@ -291,9 +291,16 @@ exports.organizationLogin = async (req, res) => {
 exports.logout = async (req, res, next) => {
     try {
         // console.log(req.cookies.organizationJwt)
-        await res.cookie('organizationJwt', 'logged out', {
-            expires: new Date(Date.now() + 10),
+        // await res.cookie('organizationJwt', 'logged out', {
+        //     expires: new Date(Date.now() + 10),
+        //     httpOnly: true,
+        // });
+        res.cookie('organizationJwt', 'logged out', {
+            expires: new Date(Date.now() + 10 * 1000),
+            secure: true,
             httpOnly: true,
+            sameSite: "none",
+            path: "/"
         });
         res.send("We will wait you again!");
         next();
