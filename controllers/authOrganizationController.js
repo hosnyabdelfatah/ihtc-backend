@@ -175,7 +175,6 @@ exports.organizationSignup = async (req, res) => {
         // console.log(token);
         const url = `${req.protocol}://${req.get('host')}`;
         // console.log(url);
-        await new Email(newOrganization, url).sendWelcome();
 
         const token = jwt.sign({id: newOrganization._id}, process.env.JWT_SECRET_KEY, {
             expiresIn: process.env.JWT_EXPIRES_IN,
@@ -185,7 +184,7 @@ exports.organizationSignup = async (req, res) => {
         newOrganization.save();
 
         cookieToken("organizationJwt", token, req, res);
-
+        await new Email(newOrganization, url).sendWelcome();
 
         res.status(201).json({
             status: "success",

@@ -19,6 +19,7 @@ const app = express();
 
 const allowedOrigins = [
     "https://ihtc-frontend-91jzowe1g-hosnyabdelfatahs-projects.vercel.app/",
+    "https://ihtc-frontend-91jzowe1g-hosnyabdelfatahs-projects.vercel.app/",
     "https://ihtc-frontend.vercel.app",
     "https://ihtc-backend.vercel.app/languages",
     "https://ihtc-backend.vercel.app/specialties",

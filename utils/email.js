@@ -6,7 +6,7 @@ const sgMail = require('@sendgrid/mail');
 module.exports = class Email {
     constructor(user, url, message) {
         this.to = user.email;
-        this.firstName = user.fname + " " + user.lname;
+        this.name = user.name ? user.name : user.fname + " " + user.lname;
         this.url = url;
         this.from = process.env.EMAIL_FROM;
         this.message = message;
@@ -42,7 +42,7 @@ module.exports = class Email {
         // 1) Render HTML based on a pug template
         const html = pug.renderFile(`${__dirname}/../views/email/${template}.pug`,
             {
-                firstName: this.firstName,
+                name: this.name,
                 url: this.url,
                 subject
             });
