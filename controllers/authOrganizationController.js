@@ -137,10 +137,10 @@ exports.organizationSignup = async (req, res) => {
         let banner = ``;
         const errMessages = [];
         let eMessages = ``;
-        const organizationInfo = ["name", "email", "password", "passwordConfirm", "phone", "mobile", "logo", "banner", "description", "industryField", "country"];
+        const organizationInfo = ["name", "email", "password", "passwordConfirm", "phone", "mobile", "logo", "banner", "description", "industryField", "country", "url"];
         const {
             name, email, password, passwordConfirm, phone, mobile,
-            description, industryField, country
+            description, industryField, country, url
         } = req.body;
 
         if (!name) errMessages.push('You must enter your name!');
@@ -173,7 +173,7 @@ exports.organizationSignup = async (req, res) => {
 
 
         // console.log(token);
-        const url = `${req.protocol}://${req.get('host')}`;
+
         // console.log(url);
 
         const token = jwt.sign({id: newOrganization._id}, process.env.JWT_SECRET_KEY, {
