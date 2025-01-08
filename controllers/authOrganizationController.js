@@ -404,7 +404,7 @@ exports.updatePassword = async (req, res) => {
         const organization = await Organization.findById(id);
 
 
-        if (await organization.correctPassword(currentPassword, organization.password)) {
+        if (!(await organization.correctPassword(currentPassword, organization.password))) {
             return res.status(401).send('Wrong current password!, please write a correct current password.');
         }
         if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');

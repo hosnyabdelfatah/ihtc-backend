@@ -301,33 +301,17 @@ exports.userLogin = async (req, res) => {
 
 exports.userLogout = async (req, res, next) => {
     try {
-        console.log(req.cookies.jwt)
-        const currentToken = await req.cookies.jwt;
-
-        if (!currentToken) {
-            return res.status(401).send('You not logged in please login')
-        }
-        if (Object.keys(req.cookies).length <= 0) return res.status(401).send('You not logged in please login')
-
-        const decoded = jwt.verify(currentToken, process.env.JWT_SECRETE_KEY)
-
-        const currentUser = await User.findById(decoded.id);
-        if (!currentUser) return res.status(401).send('The user belonging to this token does no longer exist.');
-
-        if (currentUser.changedPasswordAfter(decoded.iat)) {
-            return res.status(401).send('User recently changed password! Please log in again.');
-        }
-        currentUser.tokens = currentUser.tokens.filter(token => token !== currentToken);
-        currentUser.save();
-
-        await res.cookie('jwt', 'logged out', {
-            expires: new Date(Date.now() + 1),
+        res.cookie('userJwt', 'logged out', {
+            expires: new Date(Date.now() + 10 * 1000),
+            secure: true,
             httpOnly: true,
+            sameSite: "none",
+            path: "/"
         });
-        res.send("We will wait you again!");
-        next();
+        res.status(200).send("Logged out successfully, We will wait you again!");
     } catch (err) {
-        res.send(err.message);
+        console.log("err", err)
+        res.status(500).send(err.message);
     }
 }
 
@@ -419,7 +403,7 @@ exports.resetPassword = async (req, res) => {
         await user.save();
 
         await new Email(doctor, `${url}/login`).sendResetSuccess();
-        
+
         res.status(200).send('Successful reset password');
     } catch (err) {
         return res.send(err.message);
@@ -431,7 +415,7 @@ exports.updatePassword = async (req, res) => {
         const {id, currentPassword, newPassword, newPasswordConfirm} = req.body;
         const user = await User.findById(id);
 
-        if (await user.comparePasswords(currentPassword, user.password)) {
+        if (!(await user.comparePasswords(currentPassword, user.password))) {
             return res.status(401).send('Wrong current password!, please write correct current password.');
         }
         if (newPassword !== newPasswordConfirm) return res.status(401).send('New password not match confirm  new password!');
