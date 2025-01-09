@@ -1,66 +1,108 @@
 const Doctor = require('../model/doctorModel');
 const filterBody = require("../helpers/filterBody");
-
-
 exports.getAllDoctors = async (req, res) => {
     try {
         const selectionStore = {};
-
-        let filter = {};
         const page = parseInt(req.query.page) || 1;
-        const limit = req.query.limit || 20;
+        const limit = parseInt(req.query.limit) || 20;
 
         const {country, specialty} = req.query;
-
-        filter = country ? {...filter, country} : {};
-        filter = specialty ? {...filter, specialty} : {...filter};
-
-        // console.log(filter)
+        const filter = {};
+        if (country) filter.country = country;
+        if (specialty) filter.specialty = specialty;
 
         const startIndex = (page - 1) * limit;
 
-        const totalDocs = await Doctor.countDocuments();
+        // Query total counts and doctors simultaneously to reduce DB calls
+        const [totalDocs, countAllDoctorsSearch, allDoctors] = await Promise.all([
+            Doctor.countDocuments(),
+            Doctor.countDocuments(filter),
+            Doctor.find(filter)
+                .skip(startIndex)
+                .limit(limit)
+                .populate([
+                    {path: "language", model: "Language"},
+                    {path: "country", model: "Country"},
+                    {path: "specialty", model: "DoctorSpecialty"},
+                ]),
+        ]);
+
+        // Build selectionStore from the current page's doctors
+        allDoctors.forEach((doctor) => (selectionStore[doctor._id] = true));
+
         const totalPages = Math.ceil(totalDocs / limit);
-        const countAllDoctorsSearch = await Doctor.countDocuments(filter);
-
-
-        const allDoctors = await Doctor.find(filter).skip(startIndex).limit(limit)
-            .populate([
-                {path: "language", model: "Language"},
-                {path: "country", model: "Country"},
-                {path: "specialty", model: "DoctorSpecialty"}
-            ]);
-
-        let selectAllDoctors
-        if (filter.country || filter.specialty) {
-            selectAllDoctors = await Doctor.find(filter);
-            selectAllDoctors.forEach((doctor) => selectionStore[doctor._id] = true)
-            // console.log(selectionStore);
-        }
-
-
-        const totalCurrentSearchDoctorsPages = Math.ceil(countAllDoctorsSearch / limit)
-        const pages = !country && !specialty ? totalPages : totalCurrentSearchDoctorsPages;
-        // console.log(`${allDoctors.length} / ${limit}`)
+        const totalCurrentSearchDoctorsPages = Math.ceil(countAllDoctorsSearch / limit);
+        const pages = country || specialty ? totalCurrentSearchDoctorsPages : totalPages;
 
         res.status(200).json({
             countResultDocuments: countAllDoctorsSearch,
-
             countPerPage: allDoctors.length,
             currentPage: page,
             pages,
             totalCurrentSearchDoctorsPages,
             totalItems: totalDocs,
             selectAllSearchResult: selectionStore,
-            // selectAllDoctors,
-            selectAllSearchResultCount: selectAllDoctors ? Object.keys(selectionStore) : 0,
+            selectAllSearchResultCount: Object.keys(selectionStore).length,
             data: allDoctors,
         });
     } catch (err) {
-        console.log('Error fetching doctor:', err);
+        console.error("Error fetching doctors:", err);
         res.status(500).send(err.message);
     }
-}
+};
+
+
+// exports.getAllDoctors = async (req, res) => {
+//     try {
+//         const selectionStore = {};
+//
+//         let filter = {};
+//         const page = parseInt(req.query.page) || 1;
+//         const limit = req.query.limit || 20;
+//
+//         const {country, specialty} = req.query;
+//
+//         filter = country ? {...filter, country} : {...filter};
+//         filter = specialty ? {...filter, specialty} : {...filter};
+//
+//         const startIndex = (page - 1) * limit;
+//         const totalDocs = await Doctor.countDocuments();
+//         const totalPages = Math.ceil(totalDocs / limit);
+//         const countAllDoctorsSearch = await Doctor.countDocuments(filter);
+//
+//         const allDoctors = await Doctor.find(filter).skip(startIndex).limit(limit)
+//             .populate([
+//                 {path: "language", model: "Language"},
+//                 {path: "country", model: "Country"},
+//                 {path: "specialty", model: "DoctorSpecialty"}
+//             ]);
+//
+//         let selectAllDoctors
+//         if (filter.country || filter.specialty) {
+//             selectAllDoctors = await Doctor.find(filter);
+//             selectAllDoctors.forEach((doctor) => selectionStore[doctor._id] = true)
+//         }
+//
+//         const totalCurrentSearchDoctorsPages = Math.ceil(countAllDoctorsSearch / limit)
+//         const pages = !country && !specialty ? totalPages : totalCurrentSearchDoctorsPages;
+//
+//         res.status(200).json({
+//             countResultDocuments: countAllDoctorsSearch,
+//             countPerPage: allDoctors.length,
+//             currentPage: page,
+//             pages,
+//             totalCurrentSearchDoctorsPages,
+//             totalItems: totalDocs,
+//             selectAllSearchResult: selectionStore,
+//             // selectAllDoctors,
+//             selectAllSearchResultCount: selectAllDoctors ? Object.keys(selectionStore) : 0,
+//             data: allDoctors,
+//         });
+//     } catch (err) {
+//         console.log('Error fetching doctor:', err);
+//         res.status(500).send(err.message);
+//     }
+// }
 
 
 exports.getDoctor = async (req, res) => {

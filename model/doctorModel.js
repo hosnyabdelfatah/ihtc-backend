@@ -99,7 +99,7 @@ const doctorSchema = new Schema({
 
 doctorSchema.index({country: 1});
 doctorSchema.index({specialty: 1});
-
+doctorSchema.index({country: 1, specialty: 1});
 
 doctorSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
