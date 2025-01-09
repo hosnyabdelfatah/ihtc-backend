@@ -14,7 +14,7 @@ exports.getAllDoctors = async (req, res) => {
         const startIndex = (page - 1) * limit;
 
         // Query total counts and doctors simultaneously to reduce DB calls
-        const [totalDocs, countAllDoctorsSearch, allDoctors] = await Promise.all([
+        const [totalDocs, countAllDoctorsSearch, allDoctors, allMatchingDoctors] = await Promise.all([
             Doctor.countDocuments(),
             Doctor.countDocuments(filter),
             Doctor.find(filter)
@@ -25,10 +25,13 @@ exports.getAllDoctors = async (req, res) => {
                     {path: "country", model: "Country"},
                     {path: "specialty", model: "DoctorSpecialty"},
                 ]),
+            Doctor.find(filter).select("_id"), // IDs of all matching records for selectionStore
         ]);
 
-        // Build selectionStore from the current page's doctors
-        allDoctors.forEach((doctor) => (selectionStore[doctor._id] = true));
+        allMatchingDoctors.forEach((doctor) => {
+            selectionStore[doctor._id] = true;
+        });
+        
 
         const totalPages = Math.ceil(totalDocs / limit);
         const totalCurrentSearchDoctorsPages = Math.ceil(countAllDoctorsSearch / limit);
