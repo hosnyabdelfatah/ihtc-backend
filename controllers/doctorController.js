@@ -1,9 +1,11 @@
 const Doctor = require('../model/doctorModel');
 const filterBody = require("../helpers/filterBody");
 
+const cache = new Map();
+
 exports.getAllDoctors = async (req, res) => {
     try {
-        let selectionStore = [];
+        let selectionStore = null;
 
         let filter = {};
         const page = parseInt(req.query.page) || 1;
@@ -17,18 +19,15 @@ exports.getAllDoctors = async (req, res) => {
         // console.log(filter)
 
         const startIndex = (page - 1) * limit;
-        const [totalDocs, countAllDoctorsSearch, allDoctors] = await Promise.all([
-            Doctor.countDocuments(), // Total documents in the collection
-            Doctor.countDocuments(filter), // Total matching documents
-            Doctor.find(filter)
-                .skip(startIndex)
-                .limit(limit)
-                .populate([
-                    {path: "language", model: "Language"},
-                    {path: "country", model: "Country"},
-                    {path: "specialty", model: "DoctorSpecialty"},
-                ]),
-        ]);
+
+        // Create a unique key for the current filter
+        const cacheKey = JSON.stringify({filter, page, limit});
+
+        // Check if result is in cache
+        if (cache.has(cacheKey)) {
+            console.log("Serving from cache...");
+            return res.status(200).json(cache.get(cacheKey));
+        }
 
         // const totalDocs = await Doctor.countDocuments();
         // const countAllDoctorsSearch = await Doctor.countDocuments(filter);
@@ -39,34 +38,115 @@ exports.getAllDoctors = async (req, res) => {
         //         {path: "specialty", model: "DoctorSpecialty"}
         //     ]);
 
-
-        let selectAllDoctors
-        if (filter.country || filter.specialty) {
-            const allMatchingDoctors = await Doctor.find(filter).select("_id").lean();
-            selectionStore = allMatchingDoctors.map((doc) => doc._id.toString());
-        }
+        // Query database
+        const [totalDocs, countAllDoctorsSearch, allDoctors] = await Promise.all([
+            Doctor.countDocuments(),
+            Doctor.countDocuments(filter),
+            Doctor.find(filter)
+                .skip(startIndex)
+                .limit(limit)
+                .populate([
+                    {path: "language", model: "Language"},
+                    {path: "country", model: "Country"},
+                    {path: "specialty", model: "DoctorSpecialty"},
+                ]),
+        ]);
 
 
         const totalPages = Math.ceil(totalDocs / limit);
         const totalCurrentSearchDoctorsPages = Math.ceil(countAllDoctorsSearch / limit)
         const pages = !country && !specialty ? totalPages : totalCurrentSearchDoctorsPages;
 
+        let selectAllDoctors
+        let selectAllSearchResultCount = 0;
+        let allMatchingDoctors
+        if (filter.specialty) {
+            // selectAllDoctors = await Doctor.find(filter);
+            // selectAllDoctors.forEach((doctor) => selectionStore[doctor._id] = true);
+            allMatchingDoctors = await Doctor.find(filter).select("_id");
+            selectionStore = {};
+            allMatchingDoctors.forEach((doctor) => {
+                selectionStore[doctor._id] = true;
+            });
+            selectAllSearchResultCount = allMatchingDoctors.length;
+        }
+
         res.status(200).json({
             countResultDocuments: countAllDoctorsSearch,
+
             countPerPage: allDoctors.length,
             currentPage: page,
             pages,
             totalCurrentSearchDoctorsPages,
             totalItems: totalDocs,
             selectAllSearchResult: selectionStore,
-            selectAllSearchResultCount: selectionStore.length,
+            // selectAllDoctors,
+            selectAllSearchResultCount: selectAllDoctors ? Object.keys(selectionStore) : 0,
             data: allDoctors,
         });
+
     } catch (err) {
         console.log('Error fetching doctor:', err);
         res.status(500).send(err.message);
     }
 }
+
+// exports.getAllDoctors = async (req, res) => {
+//     try {
+//         const selectionStore = {};
+//
+//         let filter = {};
+//         const page = parseInt(req.query.page) || 1;
+//         const limit = req.query.limit || 20;
+//
+//         const {country, specialty} = req.query;
+//
+//         filter = country ? {...filter, country} : {...filter};
+//         filter = specialty ? {...filter, specialty} : {...filter};
+//
+//         // console.log(filter)
+//
+//         const startIndex = (page - 1) * limit;
+//
+//         const totalDocs = await Doctor.countDocuments();
+//         const totalPages = Math.ceil(totalDocs / limit);
+//         const countAllDoctorsSearch = await Doctor.countDocuments(filter);
+//
+//
+//         const allDoctors = await Doctor.find(filter).skip(startIndex).limit(limit)
+//             .populate([
+//                 {path: "language", model: "Language"},
+//                 {path: "country", model: "Country"},
+//                 {path: "specialty", model: "DoctorSpecialty"}
+//             ]);
+//
+//         let selectAllDoctors
+//         if (filter.country || filter.specialty) {
+//             selectAllDoctors = await Doctor.find(filter);
+//             selectAllDoctors.forEach((doctor) => selectionStore[doctor._id] = true);
+//         }
+//
+//         const totalCurrentSearchDoctorsPages = Math.ceil(countAllDoctorsSearch / limit)
+//         const pages = !country && !specialty ? totalPages : totalCurrentSearchDoctorsPages;
+//
+//         res.status(200).json({
+//             countResultDocuments: countAllDoctorsSearch,
+//
+//             countPerPage: allDoctors.length,
+//             currentPage: page,
+//             pages,
+//             totalCurrentSearchDoctorsPages,
+//             totalItems: totalDocs,
+//             selectAllSearchResult: selectionStore,
+//             // selectAllDoctors,
+//             selectAllSearchResultCount: selectAllDoctors ? Object.keys(selectionStore) : 0,
+//             data: allDoctors,
+//         });
+//     } catch (err) {
+//         console.log('Error fetching doctor:', err);
+//         res.status(500).send(err.message);
+//     }
+// }
 
 
 exports.getDoctor = async (req, res) => {
