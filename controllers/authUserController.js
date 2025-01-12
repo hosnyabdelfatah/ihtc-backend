@@ -121,11 +121,11 @@ exports.userSignUp = async (req, res) => {
 
         const userInfo = ["fname", "lname", "email", "password", "passwordConfirm",
             "whatsapp", "description", "workPlace", "facebookId", "specialty",
-            "language", "jobTitle", "country"
+            "language", "jobTitle", "country", "url"
         ];
         const {
             fname, lname, email, password, passwordConfirm, whatsapp, description,
-            workPlace, facebookId, specialty, language, jobTitle, country
+            workPlace, facebookId, specialty, language, jobTitle, country, url
         } = req.body;
 
         if (!fname) errMessages.push('You must enter your first name!');
@@ -156,7 +156,6 @@ exports.userSignUp = async (req, res) => {
 
         const newUser = await User.create({...userRequest, avatar, uniqueId: userUniqueId});
 
-        const url = `${req.protocol}://${req.get('host')}`;
 
         const user = await User.findOne({uniqueId: userUniqueId}).populate([
             {path: "language", model: "Language"},

@@ -95,11 +95,11 @@ exports.doctorSignUp = async (req, res) => {
 
         const doctorInfo = ["fname", "lname", "email", "password", "passwordConfirm",
             "whatsapp", "description", "workPlace", "facebookId", "specialty",
-            "language", "jobTitle", "country"
+            "language", "jobTitle", "country", "url"
         ];
         const {
             fname, lname, email, password, passwordConfirm, whatsapp, description,
-            workPlace, facebookId, specialty, language, jobTitle, country
+            workPlace, facebookId, specialty, language, jobTitle, country, url
         } = req.body;
 
         if (!fname) errMessages.push('You must enter your first name!');
@@ -139,9 +139,6 @@ exports.doctorSignUp = async (req, res) => {
 
         newDoctor.tokens.push(token);
         newDoctor.save();
-
-        const url = `${req.protocol}://${req.get('host')}`;
-
 
         cookieToken("doctorJwt", token, req, res);
 

@@ -97,8 +97,8 @@ exports.uploadOrganizationImages = upload.fields(
 /////////////////////////
 
 exports.organizationSignup = async (req, res) => {
-    console.log(`REQ.FILE IS: ${JSON.stringify(req.body)}`)
-    console.log(`REQ.FILE IS: ${req.file}`)
+    // console.log(`REQ.FILE IS: ${JSON.stringify(req.body)}`)
+    // console.log(`REQ.FILE IS: ${req.file}`)
     try {
         const files = req.files;
         if (!files.banner || !files.logo) {
