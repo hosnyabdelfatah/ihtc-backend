@@ -244,14 +244,10 @@ exports.organizationLogin = async (req, res) => {
                 const token = jwt.sign({id: organization._id}, process.env.JWT_SECRET_KEY, {
                     expiresIn: process.env.JWT_EXPIRES_IN,
                 });
-
-
                 // cookieToken("organizationJwt", token, req, res);
                 // console.log(token)
                 organization.tokens.push(token);
                 await organization.save();
-
-
             } else {
                 token = req.cookies['organizationJwt'];
                 const tokenIsExists = organization.tokens.indexOf(token)
@@ -276,7 +272,7 @@ exports.organizationLogin = async (req, res) => {
                     language: organization.language,
                     uniqueId: organization.uniqueId,
                 },
-                token
+                token: token
             });
         } else {
             return res.status(401).send('Wrong email or password');
