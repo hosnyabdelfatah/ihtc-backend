@@ -271,8 +271,9 @@ exports.organizationLogin = async (req, res) => {
                     industryField: organization.industruField,
                     language: organization.language,
                     uniqueId: organization.uniqueId,
+                    token: token
                 },
-                token: token
+
             });
         } else {
             return res.status(401).send('Wrong email or password');
