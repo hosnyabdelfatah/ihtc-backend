@@ -246,7 +246,7 @@ exports.organizationLogin = async (req, res) => {
                 });
 
 
-                cookieToken("organizationJwt", token, req, res);
+                // cookieToken("organizationJwt", token, req, res);
                 // console.log(token)
                 organization.tokens.push(token);
                 await organization.save();
@@ -274,7 +274,7 @@ exports.organizationLogin = async (req, res) => {
                     country: organization.country,
                     industryField: organization.industruField,
                     language: organization.language,
-                    uniqueId: organization.uniqueId
+                    uniqueId: organization.uniqueId,
                 },
                 token
             });
