@@ -227,7 +227,7 @@ exports.activateOrganization = async (req, res) => {
 exports.organizationLogin = async (req, res) => {
     const {user, password} = req.body;
     if (!user || !password) return res.status(400).send('Please enter your email and password');
-    // console.log(req.cookies['organizationJwt']);
+
     try {
 
         const organization = await Organization.findOne({email: user});
@@ -240,22 +240,17 @@ exports.organizationLogin = async (req, res) => {
         if (organization && rightPassword) {
             await organization.populate({path: 'country', model: "Country"})
 
-            if (!req.cookies['organizationJwt']) {
-                const token = jwt.sign({id: organization._id}, process.env.JWT_SECRET_KEY, {
-                    expiresIn: process.env.JWT_EXPIRES_IN,
-                });
-                // cookieToken("organizationJwt", token, req, res);
-                // console.log(token)
-                organization.tokens.push(token);
-                await organization.save();
-            } else {
-                token = req.cookies['organizationJwt'];
-                const tokenIsExists = organization.tokens.indexOf(token)
-                if (tokenIsExists === -1) {
-                    organization.tokens.push(token);
-                    await organization.save();
-                }
-            }
+
+            const token = jwt.sign({id: organization._id}, process.env.JWT_SECRET_KEY, {
+                expiresIn: process.env.JWT_EXPIRES_IN,
+            });
+
+            console.log(token)
+            organization.tokens.push(token);
+            await organization.save();
+
+            cookieToken("organizationJwt", token, req, res);
+
 
             const {name, logo, banner, description, industryField, country, language, _id, uniqueId} = organization;
             console.log(req.body)
