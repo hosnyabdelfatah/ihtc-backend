@@ -5,7 +5,7 @@ const handleOrganizationRefreshToken = async (req, res) => {
     // console.log("Cookies are:", req.cookies)
     try {
         const cookies = await req.cookies;
-
+        console.log(`OrgToken is: ${cookies.orgToken}`)
         // console.log(`organizationRefreshToken is: ${cookies?.organizationJwt}`);
         let token;
         if (
