@@ -5,7 +5,7 @@ const handleOrganizationRefreshToken = async (req, res) => {
     // console.log("Cookies are:", req.cookies)
     try {
         const cookies = await req.cookies;
-        console.log(`OrgToken is: ${cookies.orgToken}`)
+        // console.log(`OrgToken is: ${cookies.orgToken}`)
         // console.log(`organizationRefreshToken is: ${cookies?.organizationJwt}`);
         let token;
         if (
@@ -13,17 +13,19 @@ const handleOrganizationRefreshToken = async (req, res) => {
             req.headers.authorization.startsWith("Bearer")
         ) {
             token = req.headers.authorization.split(" ")[1];
-            console.log("Token From Headers", token)
+            // console.log("Token From Headers", token)
         } else if (req.cookies?.organizationJwt) {
             token = await req.cookies.organizationJwt;
-            console.log("Token From cookies", token)
+            // console.log("Token From cookies", token)
+        } else if (req.cookies?.orgToken) {
+            token = await req.cookies.orgToken;
         }
 
         if (!token) {
             return res.status(401).send('You not logged in please login')
         }
         // if (!cookies?.organizationJwt) return res.status(401).json({message: "Please Login!"});
-        console.log(token)
+        // console.log(token)
         const organizationRefreshToken = token;
         // console.log("Cookie is:" + organizationRefreshToken);
 
