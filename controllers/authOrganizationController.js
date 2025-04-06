@@ -303,9 +303,6 @@ exports.logout = async (req, res, next) => {
 exports.isLoggedIn = async (req, res, next) => {
     // console.log(req.cookies.organizationJwt)
     try {
-        console.log("organizationJwt", req.cookies.organizationJwt)
-        console.log("orgToken", req.cookies.orgToken)
-
         let token;
         if (
             req.headers.authorization &&
@@ -318,10 +315,10 @@ exports.isLoggedIn = async (req, res, next) => {
             token = req.cookies.orgToken
         }
 
-        if (!token || Object.keys(req.cookies).length <= 0) {
+        if (!token) {
             return res.status(401).send('You not logged in please login')
         }
-
+        if (Object.keys(req.cookies).length <= 0) return res.status(401).send('You not logged in please login')
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY)
 
         const currentOrganization = await Organization.findById(decoded.id);
