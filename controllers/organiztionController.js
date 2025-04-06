@@ -46,7 +46,7 @@ exports.getOrganization = async (req, res) => {
     }
 }
 
-exports.allOgranizationMessages = async (req, res) => {
+exports.allOrganizationMessages = async (req, res) => {
     try {
 
         const organizationMessages = await Message.find();
@@ -63,17 +63,22 @@ exports.allOgranizationMessages = async (req, res) => {
 }
 
 exports.organizationGetMe = async (req, res) => {
-    const id = req.params.id;
-    if (!id) return res.status(400).send("You are not login , please login!");
+    try {
+        const organization = req.organization;
+        console.log('req.organization')
 
+        // const organization = await Organization.findById(id).populate({path: 'country', model: "Country"});
+        if (!organization) return res.status(404).send('There is no organization ith this ID');
 
-    const organization = await Organization.findById(id).populate({path: 'country', model: "Country"});
-    if (!organization) return res.status(404).send('There is no organization ith this ID');
-
-    res.status(200).json({
-        data: organization,
-    })
+        res.status(200).json({
+            status: "success",
+            data: organization
+        });
+    } catch (e) {
+        console.log(e)
+    }
 }
+
 
 exports.updateOrganization = async (req, res) => {
     try {

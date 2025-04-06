@@ -301,6 +301,7 @@ exports.logout = async (req, res, next) => {
 }
 
 exports.isLoggedIn = async (req, res, next) => {
+    // console.log(req.cookies.organizationJwt)
     try {
         let token;
         if (
@@ -310,13 +311,15 @@ exports.isLoggedIn = async (req, res, next) => {
             token = req.headers.authorization.split(" ")[1];
         } else if (req.cookies.organizationJwt) {
             token = await req.cookies.organizationJwt;
+        } else if (req.cookies.orgToken) {
+            token = req.cookies.orgToken
         }
 
-        if (!token) {
+        if (!token || Object.keys(req.cookies).length <= 0) {
             return res.status(401).send('You not logged in please login')
         }
-        if (Object.keys(req.cookies).length <= 0) return res.status(401).send('You not logged in please login')
-        const decoded = jwt.verify(token, process.env.JWT_SECRETE_KEY)
+        
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY)
 
         const currentOrganization = await Organization.findById(decoded.id);
         if (!currentOrganization) return res.status(401).send('The organization belonging to this token does no longer exist.');
@@ -327,6 +330,7 @@ exports.isLoggedIn = async (req, res, next) => {
 
         req.organization = currentOrganization;
         res.locals.organization = currentOrganization;
+
         next();
     } catch (err) {
         return res.send(err.message);

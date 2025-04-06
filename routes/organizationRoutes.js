@@ -3,7 +3,7 @@ const authOrganizationController = require('../controllers/authOrganizationContr
 const organizationController = require('../controllers/organiztionController');
 const organizationRefreshTokenController = require('../controllers/organizationRefreshTokenController')
 const campaignRouter = require('./campaignRoutes');
-const authDoctorController = require("../controllers/authDoctorController");
+// const authDoctorController = require("../controllers/authDoctorController");
 
 const router = express.Router();
 
@@ -28,7 +28,8 @@ router.route('/updatePassword').patch(authOrganizationController.updatePassword)
 router.route('/updateOrganization/:id').patch(organizationController.updateOrganization)
 router.route('/updateBannerLogo/:id').patch(authOrganizationController.uploadOrganizationImages, authOrganizationController.updateBannerLogo);
 router.route('/logout').get(authOrganizationController.logout);
-router.route('/me/:id').get(organizationController.organizationGetMe);
 
+router.use(authOrganizationController.isLoggedIn);
+router.route('/me').get(organizationController.organizationGetMe);
 
 module.exports = router
