@@ -301,6 +301,7 @@ exports.logout = async (req, res, next) => {
 }
 
 exports.isLoggedIn = async (req, res, next) => {
+    console.log(req.cookies)
     console.log(req.cookies.organizationJwt)
     try {
         let token;
