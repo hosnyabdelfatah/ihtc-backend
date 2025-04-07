@@ -67,6 +67,7 @@ exports.organizationGetMe = async (req, res) => {
 
         const organization = req.organization;
         console.log('req.organization')
+        console.log('Hosny')
 
         // const organization = await Organization.findById(id).populate({path: 'country', model: "Country"});
         if (!organization) return res.status(404).send('There is no organization ith this ID');
