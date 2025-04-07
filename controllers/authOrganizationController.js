@@ -311,6 +311,8 @@ exports.isLoggedIn = async (req, res, next) => {
             token = req.headers.authorization.split(" ")[1];
         } else if (req.cookies.organizationJwt) {
             token = await req.cookies.organizationJwt;
+        } else if (req.cookies?.orgToken) {
+            token = await req.cookies.orgToken;
         }
 
         if (!token) {
