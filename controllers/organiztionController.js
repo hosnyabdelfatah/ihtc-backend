@@ -64,11 +64,13 @@ exports.allOrganizationMessages = async (req, res) => {
 
 exports.organizationGetMe = async (req, res) => {
     try {
+
         const organization = req.organization;
         console.log('req.organization')
 
         // const organization = await Organization.findById(id).populate({path: 'country', model: "Country"});
         if (!organization) return res.status(404).send('There is no organization ith this ID');
+
 
         res.status(200).json({
             status: "success",
